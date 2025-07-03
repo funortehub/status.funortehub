@@ -473,14 +473,6 @@
         </div>
 
         <div class="section-title" style="margin-top: 30px;">Testes de API</div>
-        <div class="btn-group">
-            <button class="btn btn-primary" onclick="testImgurUpload()">
-                <i class="fas fa-image"></i> Testar Upload Imgur
-            </button>
-            <button class="btn btn-info" onclick="testFirestoreConnection()">
-                <i class="fas fa-database"></i> Testar Conexão Firestore
-            </button>
-        </div>
         <div class="image-preview-container" id="imgur-preview"></div>
 
         <div class="section-title" style="margin-top: 30px;">Gerenciamento de Usuários</div>
@@ -503,17 +495,6 @@
                     <i class="fas fa-search"></i>
                 </button>
             </div>
-        </div>
-        <div class="form-group">
-            <label for="user-select-report">Selecionar Usuário para Relatório Específico:</label>
-            <select id="user-select-report" class="form-control" onchange="displaySelectedUserReportOptions()">
-                <option value="">Selecione um usuário</option>
-            </select>
-        </div>
-        <div class="btn-group" id="specific-report-buttons" style="display: none;">
-            <button class="btn btn-danger" onclick="generateSpecificUserReport()">
-                <i class="fas fa-file-pdf"></i> Gerar Relatório Específico
-            </button>
         </div>
         <div class="user-list" id="user-list-container">
             <p>Carregue alunos ou professores para vê-los aqui.</p>
@@ -581,7 +562,6 @@
         const apiStatusTerminal = document.getElementById('api-status-terminal');
         const firestoreMonitorTerminal = document.getElementById('firestore-monitor-terminal');
         const commandInput = document.getElementById('command-input');
-        const userSelectReport = document.getElementById('user-select-report');
         const userListContainer = document.getElementById('user-list-container');
         const reportModal = document.getElementById('report-modal');
         const reportModalTitle = document.getElementById('report-modal-title');
@@ -598,6 +578,25 @@
         let currentPage = 1;
         const usersPerPage = 10;
         let currentLoadedUserType = ''; // To keep track of 'alunos' or 'professores'
+
+        // List of available commands for autocompletion
+        const availableCommands = [
+            '/help',
+            '/clear',
+            '/clear-monitor',
+            '/test-imgur',
+            '/test-firestore',
+            '/load-students',
+            '/load-teachers',
+            '/backup',
+            '/count-users',
+            '/get-user',
+            '/set-status',
+            '/delete-user',
+            '/show-api',
+            '/maintenance on',
+            '/maintenance off'
+        ];
 
         // Utility Functions
         function logToTerminal(message, type = 'info', terminal = apiStatusTerminal) {
@@ -658,12 +657,18 @@
         }
 
         // API Status and Credential Display
-        function displayApiCredentials() {
+        function displayApiCredentials(full = false) {
             logToTerminal('--- Credenciais da API ---', 'debug');
             logToTerminal(`Firebase Project ID: ${firebaseConfig.projectId}`, 'debug');
-            logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey.substring(0, 5)}...${firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5)}`, 'debug');
-            logToTerminal(`Imgur Client ID: ${imgurClientId.substring(0, 5)}...${imgurClientId.substring(imgurClientId.length - 5)}`, 'debug');
-            logToTerminal(`Imgur Access Token: ${imgurAccessToken.substring(0, 5)}...${imgurAccessToken.substring(imgurAccessToken.length - 5)}`, 'debug');
+            if (full) {
+                logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey}`, 'debug');
+                logToTerminal(`Imgur Client ID: ${imgurClientId}`, 'debug');
+                logToTerminal(`Imgur Access Token: ${imgurAccessToken}`, 'debug');
+            } else {
+                logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey.substring(0, 5)}...${firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5)}`, 'debug');
+                logToTerminal(`Imgur Client ID: ${imgurClientId.substring(0, 5)}...${imgurClientId.substring(imgurClientId.length - 5)}`, 'debug');
+                logToTerminal(`Imgur Access Token: ${imgurAccessToken.substring(0, 5)}...${imgurAccessToken.substring(imgurAccessToken.length - 5)}`, 'debug');
+            }
             logToTerminal('-------------------------', 'debug');
         }
 
@@ -746,8 +751,6 @@
         async function loadUsersForReport(type) {
             logToTerminal(`Carregando ${type}...`, 'info');
             userListContainer.innerHTML = '<div class="spinner"></div><p>Carregando usuários...</p>';
-            userSelectReport.innerHTML = '<option value="">Selecione um usuário</option>';
-            document.getElementById('specific-report-buttons').style.display = 'none';
             allUsers = [];
             currentLoadedUserType = type; // Set the type of users currently loaded
 
@@ -791,7 +794,6 @@
 
         function renderUserList() {
             userListContainer.innerHTML = '';
-            userSelectReport.innerHTML = '<option value="">Selecione um usuário</option>';
 
             const startIndex = (currentPage - 1) * usersPerPage;
             const endIndex = startIndex + usersPerPage;
@@ -804,11 +806,6 @@
             }
 
             paginatedUsers.forEach(user => {
-                const option = document.createElement('option');
-                option.value = user.id;
-                option.textContent = `${user.fullname} (${user.registration || user.username})`;
-                userSelectReport.appendChild(option);
-
                 const userItem = document.createElement('div');
                 userItem.className = 'user-item';
                 userItem.innerHTML = `
@@ -848,17 +845,6 @@
             if (currentPage < totalPages) {
                 currentPage++;
                 renderUserList();
-            }
-        }
-
-        function displaySelectedUserReportOptions() {
-            const selectedUserId = userSelectReport.value;
-            if (selectedUserId) {
-                document.getElementById('specific-report-buttons').style.display = 'flex';
-                currentReportUser = allUsers.find(user => user.id === selectedUserId);
-            } else {
-                document.getElementById('specific-report-buttons').style.display = 'none';
-                currentReportUser = null;
             }
         }
 
@@ -1026,7 +1012,7 @@
         async function backupFirestoreData() {
             logToTerminal('Iniciando backup de dados do Firestore...', 'info');
             try {
-                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
+                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users', 'maintenance']; // Added maintenance
                 const backupData = {};
 
                 for (const collectionName of collections) {
@@ -1062,6 +1048,31 @@
             }
         });
 
+        commandInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Tab') {
+                e.preventDefault(); // Prevent default tab behavior (focus change)
+                autocompleteCommand();
+            }
+        });
+
+        function autocompleteCommand() {
+            const inputValue = commandInput.value.trim();
+            if (!inputValue.startsWith('/')) return;
+
+            const partialCommand = inputValue.toLowerCase();
+            const matchingCommands = availableCommands.filter(cmd =>
+                cmd.startsWith(partialCommand)
+            );
+
+            if (matchingCommands.length === 1) {
+                commandInput.value = matchingCommands[0];
+            } else if (matchingCommands.length > 1) {
+                // If multiple matches, show them in the terminal
+                logToTerminal('Comandos sugeridos:', 'info');
+                matchingCommands.forEach(cmd => logToTerminal(`  ${cmd}`, 'info'));
+            }
+        }
+
         async function executeCommand() {
             let command = commandInput.value.trim();
             commandInput.value = '';
@@ -1081,15 +1092,17 @@
                     logToTerminal('/help - Mostra esta lista de comandos.', 'info');
                     logToTerminal('/clear - Limpa o terminal de status da API.', 'info');
                     logToTerminal('/clear-monitor - Limpa o terminal de monitoramento do Firestore.', 'info');
+                    logToTerminal('/show-api - Mostra as credenciais completas das APIs.', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
-                    logToTerminal('/load-students - Carrega a lista de alunos para relatórios.', 'info');
-                    logToTerminal('/load-teachers - Carrega a lista de professores para relatórios.', 'info');
+                    logToTerminal('/load-students - Carrega e exibe a lista completa de alunos no terminal.', 'info');
+                    logToTerminal('/load-teachers - Carrega e exibe a lista completa de professores no terminal.', 'info');
                     logToTerminal('/backup - Realiza o backup de todos os dados do Firestore.', 'info');
                     logToTerminal('/count-users - Conta o número total de alunos e professores.', 'info');
                     logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
-                    logToTerminal('/set-status <username> <status> [reason] - Altera o status de um usuário (active/blocked).', 'info');
+                    logToTerminal('/set-status <username> <status (active/blocked)> [reason] - Altera o status de um usuário (active/blocked).', 'info');
                     logToTerminal('/delete-user <username> - Exclui um usuário.', 'info');
+                    logToTerminal('/maintenance <on/off> - Ativa ou desativa o modo de manutenção do servidor.', 'info');
                     logToTerminal('--------------------------', 'info');
                     break;
                 case 'clear':
@@ -1100,6 +1113,9 @@
                     firestoreMonitorTerminal.innerHTML = '';
                     logToTerminal('Terminal de monitoramento limpo.', 'info');
                     break;
+                case 'show-api':
+                    displayApiCredentials(true); // Show full credentials
+                    break;
                 case 'test-imgur':
                     testImgurUpload();
                     break;
@@ -1107,10 +1123,10 @@
                     testFirestoreConnection();
                     break;
                 case 'load-students':
-                    loadUsersForReport('alunos');
+                    await loadAndDisplayAllUsersInTerminal('alunos');
                     break;
                 case 'load-teachers':
-                    loadUsersForReport('professores');
+                    await loadAndDisplayAllUsersInTerminal('professores');
                     break;
                 case 'backup':
                     backupFirestoreData();
@@ -1139,8 +1155,38 @@
                     }
                     await deleteUserByUsername(params[0]);
                     break;
+                case 'maintenance':
+                    if (params.length < 1 || (params[0] !== 'on' && params[0] !== 'off')) {
+                        logToTerminal('Uso: /maintenance <on/off>', 'warning');
+                        return;
+                    }
+                    await setMaintenanceMode(params[0]);
+                    break;
                 default:
                     logToTerminal(`Comando desconhecido: "${cmd}". Digite /help para ver os comandos disponíveis.`, 'error');
+            }
+        }
+
+        async function loadAndDisplayAllUsersInTerminal(type) {
+            logToTerminal(`Carregando lista completa de ${type} para o terminal...`, 'info');
+            try {
+                const collectionRef = db.collection(type);
+                const snapshot = await collectionRef.orderBy('fullname').get();
+
+                if (snapshot.empty) {
+                    logToTerminal(`Nenhum ${type} encontrado.`, 'warning');
+                    return;
+                }
+
+                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} (${snapshot.size}) ---`, 'info');
+                snapshot.forEach(doc => {
+                    const user = doc.data();
+                    logToTerminal(`ID: ${doc.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}`, 'debug');
+                });
+                logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
+
+            } catch (error) {
+                logToTerminal(`Erro ao carregar ${type} para o terminal: ${error.message}`, 'error');
             }
         }
 
@@ -1259,9 +1305,23 @@
             }
         }
 
+        async function setMaintenanceMode(status) {
+            logToTerminal(`Definindo modo de manutenção para: ${status}...`, 'info');
+            try {
+                const maintenanceDocRef = db.collection('maintenance').doc('status');
+                await maintenanceDocRef.set({
+                    active: status === 'on',
+                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                logToTerminal(`Modo de manutenção definido para "${status}" com sucesso.`, 'success');
+            } catch (error) {
+                logToTerminal(`Erro ao definir modo de manutenção: ${error.message}`, 'error');
+            }
+        }
+
         // Firestore Real-time Monitor
         function setupFirestoreMonitor() {
-            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
+            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users', 'maintenance']; // Added maintenance
             let listeners = []; // To store unsubscribe functions
 
             // Clear previous listeners if any
@@ -1302,7 +1362,7 @@
 
         // Initial setup on page load
         document.addEventListener('DOMContentLoaded', () => {
-            displayApiCredentials();
+            displayApiCredentials(); // Display partial credentials on load
             setupFirestoreMonitor();
         });
     </script>
