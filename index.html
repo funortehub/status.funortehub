@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Funorte Hub - Debug Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0d1b2a;
+            --primary-light: #1b263b;
+            --accent: #e63946;
+            --white: #ffffff;
+            --gray: #f0f0f0;
+            --dark-gray: #333;
+            --light-gray: #e0e0e0;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --error: #e74c3c;
+            --info: #3498db;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: Roboto, sans-serif;
+            background-color: var(--primary-dark);
+            color: var(--white);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+            user-select: text; /* Allow text selection */
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+        }
+
+        .container {
+            background-color: var(--primary-light);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            font-family: Poppins, sans-serif;
+            color: var(--accent);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-family: Poppins, sans-serif;
+            font-weight: 600;
+            font-size: 1.3rem;
+            color: var(--white);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent);
+            padding-bottom: 5px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            font-family: Poppins, sans-serif;
+            font-weight: 500;
+            font-size: 0.95rem;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary {
+            background-color: var(--accent);
+            color: var(--white);
+        }
+
+        .btn-secondary {
+            background-color: var(--primary-dark);
+            color: var(--white);
+        }
+
+        .btn-info {
+            background-color: var(--info);
+            color: var(--white);
+        }
+
+        .btn-success {
+            background-color: var(--success);
+            color: var(--white);
+        }
+
+        .btn-warning {
+            background-color: var(--warning);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background-color: var(--error);
+            color: var(--white);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: calc(100% - 24px);
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid var(--primary-dark);
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--white);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+
+        select.form-control {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-6.4H18.4c-5%200-9.3%201.8-13.2%206.4-3.9%204.5-6%2010-6%2016.3%200%206.2%202.1%2011.7%206%2016.3l128.8%20127.8c3.9%203.9%209.4%206%2015.8%206s11.9-2.1%2015.8-6L287%20102c3.9-4.5%206-10%206-16.3s-2.1-11.7-6-16.3z%22%2F%3E%3C%2Fsvg%3E');
+            background-repeat: no-repeat;
+            background-position: right 10px top 50%;
+            background-size: 12px;
+        }
+
+        .terminal-container {
+            background-color: #000;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            height: 300px;
+            overflow-y: auto;
+            color: #0f0;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+            border: 1px solid var(--accent);
+        }
+
+        .terminal-input-group {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        .terminal-input {
+            flex-grow: 1;
+            background-color: #333;
+            border: 1px solid #555;
+            color: #0f0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: 'Courier New', Courier, monospace;
+            outline: none;
+        }
+
+        .terminal-input::placeholder {
+            color: #888;
+        }
+
+        .terminal-send-btn {
+            background-color: var(--accent);
+            color: var(--white);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .terminal-send-btn:hover {
+            background-color: #c0392b;
+        }
+
+        .log-entry {
+            margin-bottom: 5px;
+        }
+
+        .log-info { color: #0f0; }
+        .log-warning { color: #ff0; }
+        .log-error { color: #f00; }
+        .log-debug { color: #0ff; }
+        .log-api { color: #f90; }
+        .log-firestore { color: #00f; }
+        .log-user-input { color: #fff; }
+        .log-success { color: var(--success); }
+
+        .image-preview-container {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .image-preview-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--accent);
+        }
+
+        .user-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--primary-dark);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .user-item {
+            background-color: var(--primary-dark);
+            padding: 10px 15px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .user-item:hover {
+            background-color: rgba(27, 38, 59, 0.8);
+        }
+
+        .user-item-info {
+            flex-grow: 1;
+        }
+
+        .user-item-actions .btn {
+            padding: 5px 10px;
+            font-size: 0.8rem;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: var(--primary-light);
+            margin: auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: var(--shadow);
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--primary-dark);
+            padding-bottom: 10px;
+        }
+
+        .modal-title {
+            font-family: Poppins, sans-serif;
+            font-size: 1.5rem;
+            color: var(--accent);
+        }
+
+        .modal-close {
+            color: var(--light-gray);
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover,
+        .modal-close:focus {
+            color: var(--white);
+        }
+
+        .report-content {
+            background-color: var(--primary-dark);
+            padding: 20px;
+            border-radius: 8px;
+            color: var(--white);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .report-content h3 {
+            color: var(--accent);
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        .report-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .report-content ul li {
+            margin-bottom: 5px;
+        }
+
+        .report-content .data-label {
+            font-weight: bold;
+            color: var(--info);
+        }
+
+        .report-content .diary-entry, .report-content .checkin-entry {
+            background-color: rgba(27, 38, 59, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .report-content .diary-entry h4, .report-content .checkin-entry h4 {
+            color: var(--warning);
+            margin-top: 0;
+            margin-bottom: 5px;
+        }
+
+        .report-content .diary-entry p, .report-content .checkin-entry p {
+            margin: 0;
+        }
+
+        .report-content .images-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .report-content .images-grid img {
+            width: 100%;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 5px;
+            border: 1px solid var(--gray);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-top: 2px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .pagination-controls button {
+            background-color: var(--primary-dark);
+            color: var(--white);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .pagination-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination-controls button:hover:not(:disabled) {
+            background-color: rgba(27, 38, 59, 0.8);
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-input-group .form-control {
+            flex-grow: 1;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            .btn-group {
+                flex-direction: column;
+            }
+            .form-control {
+                width: calc(100% - 20px);
+            }
+            .search-input-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Funorte Hub - Painel de Depuração</h1>
+
+        <div class="section-title">Status e Credenciais da API</div>
+        <div class="terminal-container" id="api-status-terminal">
+            <div class="log-entry log-info">Iniciando Painel de Depuração...</div>
+        </div>
+        <div class="terminal-input-group">
+            <input type="text" class="terminal-input" id="command-input" placeholder="Digite um comando (ex: /help)">
+            <button class="terminal-send-btn" onclick="executeCommand()">Enviar</button>
+        </div>
+
+        <div class="section-title" style="margin-top: 30px;">Monitoramento Firestore em Tempo Real</div>
+        <div class="terminal-container" id="firestore-monitor-terminal">
+            <div class="log-entry log-info">Aguardando alterações no Firestore...</div>
+        </div>
+
+        <div class="section-title" style="margin-top: 30px;">Testes de API</div>
+        <div class="btn-group">
+            <button class="btn btn-primary" onclick="testImgurUpload()">
+                <i class="fas fa-image"></i> Testar Upload Imgur
+            </button>
+            <button class="btn btn-info" onclick="testFirestoreConnection()">
+                <i class="fas fa-database"></i> Testar Conexão Firestore
+            </button>
+        </div>
+        <div class="image-preview-container" id="imgur-preview"></div>
+
+        <div class="section-title" style="margin-top: 30px;">Gerenciamento de Usuários</div>
+        <div class="btn-group">
+            <button class="btn btn-success" onclick="loadUsersForReport('alunos')">
+                <i class="fas fa-user-graduate"></i> Carregar Alunos
+            </button>
+            <button class="btn btn-success" onclick="loadUsersForReport('professores')">
+                <i class="fas fa-chalkboard-teacher"></i> Carregar Professores
+            </button>
+            <button class="btn btn-warning" onclick="generateGeneralStudentsReport()">
+                <i class="fas fa-file-pdf"></i> Gerar Relatório Geral de Alunos
+            </button>
+        </div>
+        <div class="form-group">
+            <label for="search-user-input">Pesquisar Usuário:</label>
+            <div class="search-input-group">
+                <input type="text" id="search-user-input" class="form-control" placeholder="Pesquisar por nome..." oninput="filterAndPaginateUsers()">
+                <button class="btn btn-secondary" onclick="filterAndPaginateUsers()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="user-select-report">Selecionar Usuário para Relatório Específico:</label>
+            <select id="user-select-report" class="form-control" onchange="displaySelectedUserReportOptions()">
+                <option value="">Selecione um usuário</option>
+            </select>
+        </div>
+        <div class="btn-group" id="specific-report-buttons" style="display: none;">
+            <button class="btn btn-danger" onclick="generateSpecificUserReport()">
+                <i class="fas fa-file-pdf"></i> Gerar Relatório Específico
+            </button>
+        </div>
+        <div class="user-list" id="user-list-container">
+            <p>Carregue alunos ou professores para vê-los aqui.</p>
+        </div>
+        <div class="pagination-controls" id="user-pagination-controls" style="display: none;">
+            <button id="prev-user-page-btn" onclick="prevUserPage()" disabled><i class="fas fa-chevron-left"></i> Anterior</button>
+            <span id="user-page-info">Página 1 de 1</span>
+            <button id="next-user-page-btn" onclick="nextUserPage()" disabled>Próxima <i class="fas fa-chevron-right"></i></button>
+        </div>
+
+
+        <div class="section-title" style="margin-top: 30px;">Backup de Dados</div>
+        <div class="btn-group">
+            <button class="btn btn-warning" onclick="backupFirestoreData()">
+                <i class="fas fa-download"></i> Fazer Backup do Firestore
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal para Relatório Específico -->
+    <div id="report-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="report-modal-title">Relatório de Usuário</h2>
+                <span class="modal-close" onclick="closeReportModal()">&times;</span>
+            </div>
+            <div class="report-content" id="report-modal-body">
+                <!-- Conteúdo do relatório será injetado aqui -->
+            </div>
+            <div class="btn-group" style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="downloadReportPdf()">
+                    <i class="fas fa-download"></i> Baixar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        // Firebase Configuration (EXPOSED FOR DEBUGGING - NOT FOR PRODUCTION)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBq15tSYzmQPBQBSjrj3RMBL1y-kB6TTck",
+            authDomain: "funortehub.firebaseapp.com",
+            projectId: "funortehub",
+            storageBucket: "funortehub.appspot.com",
+            messagingSenderId: "369651480275",
+            appId: "1:369651480275:web:37601f22df012d94800626"
+        };
+
+        // Imgur Configuration (EXPOSED FOR DEBUGGING - NOT FOR PRODUCTION)
+        // IMPORTANT: This accessToken needs to be valid and have upload permissions.
+        // For anonymous uploads, use 'Client-ID YOUR_CLIENT_ID' in Authorization header.
+        const imgurClientId = '4ae8b96c539d446';
+        const imgurAccessToken = '898e039bb7db651c7b94f4d104a60aae3f5c6ff0'; // Replace with a valid token if needed
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        const apiStatusTerminal = document.getElementById('api-status-terminal');
+        const firestoreMonitorTerminal = document.getElementById('firestore-monitor-terminal');
+        const commandInput = document.getElementById('command-input');
+        const userSelectReport = document.getElementById('user-select-report');
+        const userListContainer = document.getElementById('user-list-container');
+        const reportModal = document.getElementById('report-modal');
+        const reportModalTitle = document.getElementById('report-modal-title');
+        const reportModalBody = document.getElementById('report-modal-body');
+        const searchUserInput = document.getElementById('search-user-input');
+        const userPaginationControls = document.getElementById('user-pagination-controls');
+        const prevUserPageBtn = document.getElementById('prev-user-page-btn');
+        const nextUserPageBtn = document.getElementById('next-user-page-btn');
+        const userPageInfo = document.getElementById('user-page-info');
+
+        let allUsers = []; // Stores all loaded students/teachers for reports
+        let filteredUsers = []; // Stores users after search filter
+        let currentReportUser = null; // Stores the user selected for specific report
+        let currentPage = 1;
+        const usersPerPage = 10;
+        let currentLoadedUserType = ''; // To keep track of 'alunos' or 'professores'
+
+        // Utility Functions
+        function logToTerminal(message, type = 'info', terminal = apiStatusTerminal) {
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            terminal.appendChild(logEntry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function formatDate(dateInput) {
+            if (!dateInput) return 'Não informado';
+            try {
+                let date;
+                if (dateInput.toDate) {
+                    date = dateInput.toDate();
+                } else {
+                    date = new Date(dateInput);
+                }
+                const offset = -3; // Brasília timezone offset
+                const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+                const brasiliaTime = new Date(utc + (3600000 * offset));
+                return brasiliaTime.toLocaleDateString('pt-BR');
+            } catch (e) {
+                return 'Data inválida';
+            }
+        }
+
+        function formatDateTime(dateInput) {
+            if (!dateInput) return 'Não informado';
+            try {
+                let date;
+                if (dateInput.toDate) {
+                    date = dateInput.toDate();
+                } else {
+                    date = new Date(dateInput);
+                }
+                const offset = -3; // Brasília timezone offset
+                const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+                const brasiliaTime = new Date(utc + (3600000 * offset));
+                return brasiliaTime.toLocaleString('pt-BR');
+            } catch (e) {
+                return 'Data/Hora inválida';
+            }
+        }
+
+        function getCourseName(courseId) {
+            const courses = {
+                'medicine': 'Medicina',
+                'nursing': 'Enfermagem',
+                'dentistry': 'Odontologia',
+                'physiotherapy': 'Fisioterapia',
+                'nutrition': 'Nutrição',
+                'bis': 'BIS',
+                'bacimed': 'BACIMED'
+            };
+            return courses[courseId] || 'Não especificado';
+        }
+
+        // API Status and Credential Display
+        function displayApiCredentials() {
+            logToTerminal('--- Credenciais da API ---', 'debug');
+            logToTerminal(`Firebase Project ID: ${firebaseConfig.projectId}`, 'debug');
+            logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey.substring(0, 5)}...${firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5)}`, 'debug');
+            logToTerminal(`Imgur Client ID: ${imgurClientId.substring(0, 5)}...${imgurClientId.substring(imgurClientId.length - 5)}`, 'debug');
+            logToTerminal(`Imgur Access Token: ${imgurAccessToken.substring(0, 5)}...${imgurAccessToken.substring(imgurAccessToken.length - 5)}`, 'debug');
+            logToTerminal('-------------------------', 'debug');
+        }
+
+        // API Tests
+        async function testImgurUpload() {
+            logToTerminal('Iniciando teste de upload Imgur...', 'api');
+            const imgurPreview = document.getElementById('imgur-preview');
+            imgurPreview.innerHTML = '<div class="spinner"></div><p>Gerando imagem aleatória e fazendo upload...</p>';
+
+            try {
+                // 1. Gerar uma imagem aleatória usando Canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 100;
+                const ctx = canvas.getContext('2d');
+
+                // Preencher com uma cor aleatória
+                const randomColor = '#' + Math.floor(Math.random()*16777215).toString(16);
+                ctx.fillStyle = randomColor;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Adicionar texto
+                ctx.font = '20px Arial';
+                ctx.fillStyle = '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.fillText('Funorte Test', canvas.width / 2, canvas.height / 2 - 10);
+                ctx.fillText(new Date().toLocaleTimeString(), canvas.width / 2, canvas.height / 2 + 15);
+
+                // 2. Converter o Canvas para Blob
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+
+                const formData = new FormData();
+                formData.append('image', blob, 'funorte_test_image.png'); // Adiciona um nome de arquivo
+
+                const uploadResponse = await fetch('https://api.imgur.com/3/image', {
+                    method: 'POST',
+                    headers: {
+                        // Use Client-ID for anonymous uploads, or Bearer for authenticated uploads
+                        // 'Authorization': `Client-ID ${imgurClientId}` 
+                        'Authorization': `Bearer ${imgurAccessToken}` // Use this if you have a valid OAuth2 token
+                    },
+                    body: formData
+                });
+
+                logToTerminal(`Imgur API Response Status: ${uploadResponse.status} ${uploadResponse.statusText}`, 'debug');
+
+                const data = await uploadResponse.json();
+
+                if (uploadResponse.ok && data.success) {
+                    logToTerminal(`Upload Imgur bem-sucedido! URL: ${data.data.link}`, 'success');
+                    imgurPreview.innerHTML = `<p>Upload bem-sucedido!</p><img src="${data.data.link}" alt="Uploaded Image">`;
+                } else {
+                    logToTerminal(`Falha no upload Imgur: ${data.data.error || 'Erro desconhecido'}`, 'error');
+                    imgurPreview.innerHTML = `<p style="color: var(--error);">Falha no upload Imgur: ${data.data.error || 'Erro desconhecido'}</p>`;
+                }
+            } catch (error) {
+                logToTerminal(`Erro ao testar upload Imgur: ${error.message}`, 'error');
+                imgurPreview.innerHTML = `<p style="color: var(--error);">Erro ao testar upload Imgur: ${error.message}</p>`;
+            }
+        }
+
+        async function testFirestoreConnection() {
+            logToTerminal('Iniciando teste de conexão Firestore...', 'api');
+            try {
+                // Try to read a small, non-sensitive collection or a single document
+                const testDocRef = db.collection('debug_panel_status').doc('connection_test');
+                await testDocRef.set({ last_checked: firebase.firestore.FieldValue.serverTimestamp() });
+                const doc = await testDocRef.get();
+                if (doc.exists) {
+                    logToTerminal('Conexão Firestore bem-sucedida! Documento de teste atualizado.', 'success');
+                } else {
+                    logToTerminal('Conexão Firestore bem-sucedida, mas documento de teste não encontrado após criação.', 'warning');
+                }
+            } catch (error) {
+                logToTerminal(`Falha na conexão Firestore: ${error.message}`, 'error');
+            }
+        }
+
+        // User Management and Reports
+        async function loadUsersForReport(type) {
+            logToTerminal(`Carregando ${type}...`, 'info');
+            userListContainer.innerHTML = '<div class="spinner"></div><p>Carregando usuários...</p>';
+            userSelectReport.innerHTML = '<option value="">Selecione um usuário</option>';
+            document.getElementById('specific-report-buttons').style.display = 'none';
+            allUsers = [];
+            currentLoadedUserType = type; // Set the type of users currently loaded
+
+            try {
+                const collectionRef = db.collection(type);
+                const snapshot = await collectionRef.orderBy('fullname').get();
+
+                if (snapshot.empty) {
+                    userListContainer.innerHTML = `<p>Nenhum ${type} encontrado.</p>`;
+                    logToTerminal(`Nenhum ${type} encontrado.`, 'warning');
+                    userPaginationControls.style.display = 'none';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const user = { id: doc.id, ...doc.data(), type: type };
+                    allUsers.push(user);
+                });
+                logToTerminal(`${allUsers.length} ${type} carregados com sucesso.`, 'success');
+
+                currentPage = 1; // Reset to first page
+                filterAndPaginateUsers(); // Apply filter and render first page
+
+            } catch (error) {
+                logToTerminal(`Erro ao carregar ${type}: ${error.message}`, 'error');
+                userListContainer.innerHTML = `<p style="color: var(--error);">Erro ao carregar usuários: ${error.message}</p>`;
+                userPaginationControls.style.display = 'none';
+            }
+        }
+
+        function filterAndPaginateUsers() {
+            const searchTerm = searchUserInput.value.toLowerCase();
+            filteredUsers = allUsers.filter(user =>
+                user.fullname.toLowerCase().includes(searchTerm) ||
+                (user.username && user.username.toLowerCase().includes(searchTerm)) ||
+                (user.registration && user.registration.toLowerCase().includes(searchTerm))
+            );
+            currentPage = 1; // Reset to first page after filtering
+            renderUserList();
+        }
+
+        function renderUserList() {
+            userListContainer.innerHTML = '';
+            userSelectReport.innerHTML = '<option value="">Selecione um usuário</option>';
+
+            const startIndex = (currentPage - 1) * usersPerPage;
+            const endIndex = startIndex + usersPerPage;
+            const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+            if (paginatedUsers.length === 0) {
+                userListContainer.innerHTML = '<p>Nenhum usuário encontrado com este critério de busca.</p>';
+                userPaginationControls.style.display = 'none';
+                return;
+            }
+
+            paginatedUsers.forEach(user => {
+                const option = document.createElement('option');
+                option.value = user.id;
+                option.textContent = `${user.fullname} (${user.registration || user.username})`;
+                userSelectReport.appendChild(option);
+
+                const userItem = document.createElement('div');
+                userItem.className = 'user-item';
+                userItem.innerHTML = `
+                    <div class="user-item-info">
+                        <strong>${user.fullname}</strong> (${user.role || user.type})<br>
+                        Matrícula: ${user.registration || 'N/A'} | CPF: ${user.cpf || 'N/A'}
+                    </div>
+                    <div class="user-item-actions">
+                        <button class="btn btn-info" onclick="viewSpecificUser('${user.id}', '${user.type}')">
+                            <i class="fas fa-eye"></i> Ver Detalhes
+                        </button>
+                    </div>
+                `;
+                userListContainer.appendChild(userItem);
+            });
+
+            updatePaginationControls();
+        }
+
+        function updatePaginationControls() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            userPageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+            prevUserPageBtn.disabled = currentPage === 1;
+            nextUserPageBtn.disabled = currentPage === totalPages || totalPages === 0;
+            userPaginationControls.style.display = 'flex';
+        }
+
+        function prevUserPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderUserList();
+            }
+        }
+
+        function nextUserPage() {
+            const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderUserList();
+            }
+        }
+
+        function displaySelectedUserReportOptions() {
+            const selectedUserId = userSelectReport.value;
+            if (selectedUserId) {
+                document.getElementById('specific-report-buttons').style.display = 'flex';
+                currentReportUser = allUsers.find(user => user.id === selectedUserId);
+            } else {
+                document.getElementById('specific-report-buttons').style.display = 'none';
+                currentReportUser = null;
+            }
+        }
+
+        async function viewSpecificUser(userId, userType) {
+            const user = allUsers.find(u => u.id === userId && u.type === userType);
+            if (!user) {
+                logToTerminal('Usuário não encontrado para visualização.', 'error');
+                return;
+            }
+            currentReportUser = user;
+            await generateSpecificUserReport(true); // Generate and display in modal
+        }
+
+        async function generateSpecificUserReport(displayOnly = false) {
+            if (!currentReportUser) {
+                logToTerminal('Nenhum usuário selecionado para relatório específico.', 'warning');
+                alert('Por favor, selecione um usuário primeiro.');
+                return;
+            }
+
+            logToTerminal(`Gerando relatório para ${currentReportUser.fullname}...`, 'info');
+            reportModalTitle.textContent = `Relatório de ${currentReportUser.fullname}`;
+            reportModalBody.innerHTML = '<div class="spinner"></div><p>Gerando relatório...</p>';
+            if (!displayOnly) reportModal.style.display = 'flex';
+
+            try {
+                let reportHtml = `
+                    <h3>Informações Pessoais</h3>
+                    <ul>
+                        <li><span class="data-label">Nome Completo:</span> ${currentReportUser.fullname}</li>
+                        <li><span class="data-label">Data de Nascimento:</span> ${formatDate(currentReportUser.birthdate)}</li>
+                        <li><span class="data-label">CPF:</span> ${currentReportUser.cpf}</li>
+                        <li><span class="data-label">Matrícula:</span> ${currentReportUser.registration || 'N/A'}</li>
+                        <li><span class="data-label">Nome de Usuário:</span> ${currentReportUser.username}</li>
+                        <li><span class="data-label">Tipo de Usuário:</span> ${currentReportUser.role || currentReportUser.type}</li>
+                        <li><span class="data-label">Curso:</span> ${getCourseName(currentReportUser.course || 'N/A')}</li>
+                        <li><span class="data-label">Status da Conta:</span> ${currentReportUser.status} ${currentReportUser.status === 'blocked' ? `(Motivo: ${currentReportUser.blockReason || 'Não informado'})` : ''}</li>
+                        <li><span class="data-label">Status de Registro:</span> ${currentReportUser.registrationStatus || 'N/A'}</li>
+                        <li><span class="data-label">Tipo de Internato:</span> ${currentReportUser.internatoType || 'N/A'}</li>
+                        <li><span class="data-label">Criado em:</span> ${formatDateTime(currentReportUser.createdAt)}</li>
+                    </ul>
+                `;
+
+                if (currentReportUser.type === 'alunos') {
+                    // Fetch Diaries
+                    const diariesSnapshot = await db.collection('Diario')
+                        .where('userId', '==', currentReportUser.id)
+                        .orderBy('createdAt', 'desc')
+                        .get();
+
+                    reportHtml += `<h3>Diários de Campo (${diariesSnapshot.size})</h3>`;
+                    if (diariesSnapshot.empty) {
+                        reportHtml += '<p>Nenhum diário de campo registrado.</p>';
+                    } else {
+                        diariesSnapshot.forEach(doc => {
+                            const diary = doc.data();
+                            reportHtml += `
+                                <div class="diary-entry">
+                                    <h4>${diary.title}</h4>
+                                    <p><span class="data-label">Data:</span> ${formatDate(diary.date)}</p>
+                                    <p><span class="data-label">Professor:</span> ${diary.professorName || 'N/A'}</p>
+                                    <p><span class="data-label">Status:</span> ${diary.status}</p>
+                                    ${diary.grade !== undefined && diary.grade !== null ? `<p><span class="data-label">Nota:</span> ${diary.grade}</p>` : ''}
+                                    ${diary.comments ? `<p><span class="data-label">Comentários:</span> ${diary.comments}</p>` : ''}
+                                    <p><span class="data-label">Descrição:</span> ${diary.text}</p>
+                                    ${diary.images && diary.images.length > 0 ? `
+                                        <p><span class="data-label">Imagens:</span></p>
+                                        <div class="images-grid">
+                                            ${diary.images.map(img => `<img src="${img}" alt="Diary Image">`).join('')}
+                                        </div>
+                                    ` : '<p>Nenhuma imagem anexada.</p>'}
+                                </div>
+                            `;
+                        });
+                    }
+
+                    // Fetch Check-ins
+                    const checkinsSnapshot = await db.collection('checkins')
+                        .where('studentId', '==', currentReportUser.id)
+                        .orderBy('checkinTime', 'desc')
+                        .get();
+
+                    reportHtml += `<h3>Histórico de Check-ins (${checkinsSnapshot.size})</h3>`;
+                    if (checkinsSnapshot.empty) {
+                        reportHtml += '<p>Nenhum check-in registrado.</p>';
+                    } else {
+                        checkinsSnapshot.forEach(doc => {
+                            const checkin = doc.data();
+                            reportHtml += `
+                                <div class="checkin-entry">
+                                    <h4>Check-in com ${checkin.preceptorName || 'N/A'}</h4>
+                                    <p><span class="data-label">Hora do Check-in:</span> ${formatDateTime(checkin.checkinTime)}</p>
+                                    <p><span class="data-label">Localização:</span> ${checkin.latitude}, ${checkin.longitude} (${checkin.locationType === 'ip' ? 'Aproximada por IP' : 'GPS'})</p>
+                                    <p><span class="data-label">Status:</span> ${checkin.status}</p>
+                                    ${checkin.approvedBy ? `<p><span class="data-label">Aprovado por:</span> ${checkin.approvedBy}</p>` : ''}
+                                    ${checkin.denialReason ? `<p><span class="data-label">Motivo da Recusa:</span> ${checkin.denialReason}</p>` : ''}
+                                </div>
+                            `;
+                        });
+                    }
+                }
+
+                reportModalBody.innerHTML = reportHtml;
+                logToTerminal(`Relatório para ${currentReportUser.fullname} gerado com sucesso.`, 'success');
+                if (displayOnly) reportModal.style.display = 'flex';
+
+            } catch (error) {
+                logToTerminal(`Erro ao gerar relatório para ${currentReportUser.fullname}: ${error.message}`, 'error');
+                reportModalBody.innerHTML = `<p style="color: var(--error);">Erro ao gerar relatório: ${error.message}</p>`;
+            }
+        }
+
+        function closeReportModal() {
+            reportModal.style.display = 'none';
+        }
+
+        async function downloadReportPdf() {
+            logToTerminal('Iniciando download do relatório em PDF...', 'info');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+            const content = document.getElementById('report-modal-body');
+
+            // Temporarily adjust styles for PDF rendering if needed
+            const originalStyles = content.style.cssText;
+            content.style.padding = '20px';
+            content.style.backgroundColor = '#0d1b2a';
+            content.style.color = '#ffffff';
+
+            try {
+                const canvas = await html2canvas(content, {
+                    scale: 2, // Increase scale for better quality
+                    useCORS: true, // Important for images from external URLs (like Imgur)
+                    logging: false // Disable html2canvas logs
+                });
+
+                const imgData = canvas.toDataURL('image/png');
+                const imgWidth = 595.28; // A4 width in points
+                const pageHeight = 841.89; // A4 height in points
+                const imgHeight = canvas.height * imgWidth / canvas.width;
+                let heightLeft = imgHeight;
+                let position = 0;
+
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+
+                while (heightLeft >= 0) {
+                    position = heightLeft - imgHeight;
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    heightLeft -= pageHeight;
+                }
+
+                doc.save(`${reportModalTitle.textContent.replace(/ /g, '_')}.pdf`);
+                logToTerminal('Relatório PDF baixado com sucesso!', 'success');
+            } catch (error) {
+                logToTerminal(`Erro ao baixar PDF: ${error.message}`, 'error');
+                alert('Erro ao gerar PDF. Verifique o console para mais detalhes.');
+            } finally {
+                // Restore original styles
+                content.style.cssText = originalStyles;
+            }
+        }
+
+        // Backup Firestore Data
+        async function backupFirestoreData() {
+            logToTerminal('Iniciando backup de dados do Firestore...', 'info');
+            try {
+                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
+                const backupData = {};
+
+                for (const collectionName of collections) {
+                    logToTerminal(`Fazendo backup da coleção: ${collectionName}...`, 'info');
+                    const snapshot = await db.collection(collectionName).get();
+                    backupData[collectionName] = snapshot.docs.map(doc => ({
+                        id: doc.id,
+                        ...doc.data()
+                    }));
+                }
+
+                const backupJson = JSON.stringify(backupData, null, 2);
+                const blob = new Blob([backupJson], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `funorte_hub_backup_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                logToTerminal('Backup do Firestore concluído e baixado com sucesso!', 'success');
+            } catch (error) {
+                logToTerminal(`Erro ao fazer backup do Firestore: ${error.message}`, 'error');
+            }
+        }
+
+        // Terminal Commands
+        commandInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                executeCommand();
+            }
+        });
+
+        async function executeCommand() {
+            let command = commandInput.value.trim();
+            commandInput.value = '';
+            if (!command.startsWith('/')) {
+                logToTerminal(`Comando inválido: "${command}". Comandos devem começar com '/'.`, 'warning');
+                return;
+            }
+
+            logToTerminal(`> ${command}`, 'user-input');
+            const args = command.substring(1).split(' ');
+            const cmd = args[0].toLowerCase();
+            const params = args.slice(1);
+
+            switch (cmd) {
+                case 'help':
+                    logToTerminal('--- Comandos Disponíveis ---', 'info');
+                    logToTerminal('/help - Mostra esta lista de comandos.', 'info');
+                    logToTerminal('/clear - Limpa o terminal de status da API.', 'info');
+                    logToTerminal('/clear-monitor - Limpa o terminal de monitoramento do Firestore.', 'info');
+                    logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
+                    logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
+                    logToTerminal('/load-students - Carrega a lista de alunos para relatórios.', 'info');
+                    logToTerminal('/load-teachers - Carrega a lista de professores para relatórios.', 'info');
+                    logToTerminal('/backup - Realiza o backup de todos os dados do Firestore.', 'info');
+                    logToTerminal('/count-users - Conta o número total de alunos e professores.', 'info');
+                    logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
+                    logToTerminal('/set-status <username> <status> [reason] - Altera o status de um usuário (active/blocked).', 'info');
+                    logToTerminal('/delete-user <username> - Exclui um usuário.', 'info');
+                    logToTerminal('--------------------------', 'info');
+                    break;
+                case 'clear':
+                    apiStatusTerminal.innerHTML = '';
+                    logToTerminal('Terminal limpo.', 'info');
+                    break;
+                case 'clear-monitor':
+                    firestoreMonitorTerminal.innerHTML = '';
+                    logToTerminal('Terminal de monitoramento limpo.', 'info');
+                    break;
+                case 'test-imgur':
+                    testImgurUpload();
+                    break;
+                case 'test-firestore':
+                    testFirestoreConnection();
+                    break;
+                case 'load-students':
+                    loadUsersForReport('alunos');
+                    break;
+                case 'load-teachers':
+                    loadUsersForReport('professores');
+                    break;
+                case 'backup':
+                    backupFirestoreData();
+                    break;
+                case 'count-users':
+                    await countUsers();
+                    break;
+                case 'get-user':
+                    if (params.length < 1) {
+                        logToTerminal('Uso: /get-user <username>', 'warning');
+                        return;
+                    }
+                    await getUserDetailsByUsername(params[0]);
+                    break;
+                case 'set-status':
+                    if (params.length < 2) {
+                        logToTerminal('Uso: /set-status <username> <status (active/blocked)> [reason]', 'warning');
+                        return;
+                    }
+                    await setUserStatusByUsername(params[0], params[1], params.slice(2).join(' '));
+                    break;
+                case 'delete-user':
+                    if (params.length < 1) {
+                        logToTerminal('Uso: /delete-user <username>', 'warning');
+                        return;
+                    }
+                    await deleteUserByUsername(params[0]);
+                    break;
+                default:
+                    logToTerminal(`Comando desconhecido: "${cmd}". Digite /help para ver os comandos disponíveis.`, 'error');
+            }
+        }
+
+        async function countUsers() {
+            logToTerminal('Contando usuários...', 'info');
+            try {
+                const studentsSnapshot = await db.collection('alunos').get();
+                const teachersSnapshot = await db.collection('professores').get();
+                logToTerminal(`Total de Alunos: ${studentsSnapshot.size}`, 'info');
+                logToTerminal(`Total de Professores: ${teachersSnapshot.size}`, 'info');
+            } catch (error) {
+                logToTerminal(`Erro ao contar usuários: ${error.message}`, 'error');
+            }
+        }
+
+        async function getUserDetailsByUsername(username) {
+            logToTerminal(`Buscando detalhes do usuário com username: ${username}...`, 'info');
+            try {
+                const userQuery = await db.collection('users').where('username', '==', username).limit(1).get();
+                if (userQuery.empty) {
+                    logToTerminal(`Usuário com username "${username}" não encontrado.`, 'warning');
+                    return;
+                }
+
+                const userDoc = userQuery.docs[0];
+                const userData = userDoc.data();
+                const userId = userData.userId;
+                const userRole = userData.role;
+                const collectionName = userRole === 'student' ? 'alunos' : 'professores';
+
+                const detailsDoc = await db.collection(collectionName).doc(userId).get();
+                if (detailsDoc.exists) {
+                    logToTerminal(`Detalhes do Usuário (${collectionName}/${userId}):`, 'info');
+                    logToTerminal(JSON.stringify(detailsDoc.data(), null, 2), 'debug');
+                } else {
+                    logToTerminal(`Detalhes completos para o usuário "${username}" (ID: ${userId}) não encontrados na coleção ${collectionName}.`, 'warning');
+                }
+            } catch (error) {
+                logToTerminal(`Erro ao buscar detalhes do usuário: ${error.message}`, 'error');
+            }
+        }
+
+        async function setUserStatusByUsername(username, status, reason = '') {
+            logToTerminal(`Alterando status do usuário com username: ${username} para: ${status}...`, 'info');
+            if (status !== 'active' && status !== 'blocked') {
+                logToTerminal('Status inválido. Use "active" ou "blocked".', 'warning');
+                return;
+            }
+            if (status === 'blocked' && !reason) {
+                logToTerminal('Motivo é obrigatório para bloquear um usuário.', 'warning');
+                return;
+            }
+
+            try {
+                const userQuery = await db.collection('users').where('username', '==', username).limit(1).get();
+                if (userQuery.empty) {
+                    logToTerminal(`Usuário com username "${username}" não encontrado.`, 'warning');
+                    return;
+                }
+
+                const userDoc = userQuery.docs[0];
+                const userData = userDoc.data();
+                const userId = userData.userId;
+                const userRole = userData.role;
+                const collectionName = userRole === 'student' ? 'alunos' : 'professores';
+
+                const updateData = {
+                    status: status,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    blockReason: status === 'blocked' ? reason : ''
+                };
+
+                await db.collection(collectionName).doc(userId).update(updateData);
+                await userDoc.ref.update(updateData); // Update in 'users' collection too
+
+                logToTerminal(`Status do usuário "${username}" (ID: ${userId}) alterado para ${status} com sucesso.`, 'success');
+                // Reload users list if currently displayed and matches type
+                if (currentLoadedUserType === collectionName) {
+                    loadUsersForReport(currentLoadedUserType);
+                }
+            } catch (error) {
+                logToTerminal(`Erro ao alterar status do usuário: ${error.message}`, 'error');
+            }
+        }
+
+        async function deleteUserByUsername(username) {
+            logToTerminal(`Excluindo usuário com username: ${username}...`, 'warning');
+            if (!confirm(`Tem certeza que deseja EXCLUIR PERMANENTEMENTE o usuário "${username}"? Esta ação é irreversível.`)) {
+                logToTerminal('Exclusão cancelada.', 'info');
+                return;
+            }
+
+            try {
+                const userQuery = await db.collection('users').where('username', '==', username).limit(1).get();
+                if (userQuery.empty) {
+                    logToTerminal(`Usuário com username "${username}" não encontrado.`, 'warning');
+                    return;
+                }
+
+                const userDoc = userQuery.docs[0];
+                const userData = userDoc.data();
+                const userId = userData.userId;
+                const userRole = userData.role;
+                const collectionName = userRole === 'student' ? 'alunos' : 'professores';
+
+                await db.collection(collectionName).doc(userId).delete();
+                await userDoc.ref.delete(); // Delete from 'users' collection
+
+                logToTerminal(`Usuário "${username}" (ID: ${userId}) excluído com sucesso de ${collectionName} e users.`, 'success');
+                // Reload users list if currently displayed and matches type
+                if (currentLoadedUserType === collectionName) {
+                    loadUsersForReport(currentLoadedUserType);
+                }
+            } catch (error) {
+                logToTerminal(`Erro ao excluir usuário: ${error.message}`, 'error');
+            }
+        }
+
+        // Firestore Real-time Monitor
+        function setupFirestoreMonitor() {
+            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
+            let listeners = []; // To store unsubscribe functions
+
+            // Clear previous listeners if any
+            listeners.forEach(unsubscribe => unsubscribe());
+            listeners = [];
+
+            collectionsToMonitor.forEach(collectionName => {
+                const unsubscribe = db.collection(collectionName).onSnapshot(snapshot => {
+                    snapshot.docChanges().forEach(change => {
+                        const data = change.doc.data();
+                        const docId = change.doc.id;
+                        let logMessage = '';
+                        let logType = 'firestore';
+
+                        switch (change.type) {
+                            case 'added':
+                                logMessage = `[${collectionName}] NOVO: ID ${docId} - ${JSON.stringify(data)}`;
+                                logType = 'success';
+                                break;
+                            case 'modified':
+                                logMessage = `[${collectionName}] MODIFICADO: ID ${docId} - ${JSON.stringify(data)}`;
+                                logType = 'warning';
+                                break;
+                            case 'removed':
+                                logMessage = `[${collectionName}] REMOVIDO: ID ${docId}`;
+                                logType = 'error';
+                                break;
+                        }
+                        logToTerminal(logMessage, logType, firestoreMonitorTerminal);
+                    });
+                }, error => {
+                    logToTerminal(`Erro ao monitorar coleção ${collectionName}: ${error.message}`, 'error', firestoreMonitorTerminal);
+                });
+                listeners.push(unsubscribe); // Store unsubscribe function
+            });
+            logToTerminal('Monitoramento de Firestore em tempo real iniciado para coleções principais.', 'info', firestoreMonitorTerminal);
+        }
+
+        // Initial setup on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            displayApiCredentials();
+            setupFirestoreMonitor();
+        });
+    </script>
+</body>
+</html>
