@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Funorte Hub - Debug Panel</title>
+    <link rel="icon" href="https://i.imgur.com/nIt16yd.jpeg" type="image/jpeg"> <!-- Updated Favicon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -983,6 +984,8 @@
             '/help',
             '/clear',
             '/clear-monitor',
+            '/ping', // New command
+            '/find', // New command
             '/test-imgur',
             '/test-firestore',
             '/load-students',
@@ -1896,6 +1899,8 @@
                     logToTerminal('/help - Mostra esta lista de comandos.', 'info');
                     logToTerminal('/clear - Limpa o terminal de status da API.', 'info');
                     logToTerminal('/clear-monitor - Limpa o terminal de monitoramento do servidor.', 'info');
+                    logToTerminal('/ping - Testa a conectividade do painel.', 'info'); // Added
+                    logToTerminal('/find <palavra-chave> - Busca por uma palavra-chave em todo o servidor (Firestore).', 'info'); // Added
                     logToTerminal('/show-api - Mostra as credenciais completas das APIs (requer senha de administrador).', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
@@ -1916,6 +1921,19 @@
                 case 'clear-monitor':
                     firestoreMonitorTerminal.innerHTML = '';
                     logToTerminal('Terminal de monitoramento limpo.', 'info');
+                    break;
+                case 'ping': // New command implementation
+                    const startTime = Date.now();
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate network delay
+                    const endTime = Date.now();
+                    logToTerminal(`Pong! Latência: ${endTime - startTime}ms`, 'success');
+                    break;
+                case 'find': // New command implementation
+                    if (params.length < 1) {
+                        logToTerminal('Uso: /find <palavra-chave>', 'warning');
+                        return;
+                    }
+                    await findInFirestore(params.join(' '));
                     break;
                 case 'show-api':
                     const password = prompt("Por favor, digite a senha de administrador para ver as credenciais da API:");
@@ -2084,6 +2102,60 @@
                 }
             } catch (error) {
                 logToTerminal(`Erro ao excluir usuário: ${error.message}`, 'error');
+            }
+        }
+
+        // New function to find data in Firestore
+        async function findInFirestore(keyword) {
+            logToTerminal(`Buscando por "${keyword}" em todas as coleções...`, 'info');
+            const collectionsToSearch = [
+                'alunos',
+                'professores',
+                'Diario',
+                'checkins',
+                'messages',
+                'notifications',
+                'users',
+                // Add any other collections you want to search
+            ];
+            let foundCount = 0;
+
+            for (const collectionName of collectionsToSearch) {
+                try {
+                    const snapshot = await db.collection(collectionName).get();
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const docId = doc.id;
+                        let matchedFields = [];
+
+                        for (const key in data) {
+                            if (typeof data[key] === 'string' && data[key].toLowerCase().includes(keyword.toLowerCase())) {
+                                matchedFields.push(key);
+                            } else if (typeof data[key] === 'object' && data[key] !== null) {
+                                // Recursively search in nested objects (simple level)
+                                for (const nestedKey in data[key]) {
+                                    if (typeof data[key][nestedKey] === 'string' && data[key][nestedKey].toLowerCase().includes(keyword.toLowerCase())) {
+                                        matchedFields.push(`${key}.${nestedKey}`);
+                                    }
+                                }
+                            }
+                        }
+
+                        if (matchedFields.length > 0) {
+                            logToTerminal(`Encontrado em [${collectionName}/${docId}] nos campos: ${matchedFields.join(', ')}`, 'info');
+                            logToTerminal(`  Dados: ${JSON.stringify(data)}`, 'debug');
+                            foundCount++;
+                        }
+                    });
+                } catch (error) {
+                    logToTerminal(`Erro ao buscar na coleção ${collectionName}: ${error.message}`, 'error');
+                }
+            }
+
+            if (foundCount === 0) {
+                logToTerminal(`Nenhum registro encontrado contendo "${keyword}".`, 'warning');
+            } else {
+                logToTerminal(`Busca concluída. Total de ${foundCount} registros encontrados contendo "${keyword}".`, 'success');
             }
         }
 
