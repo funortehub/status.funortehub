@@ -843,7 +843,9 @@
                 margin-top: 10px;
                 text-align: center;
                 width: 100%;
-                max-width: none; /* Remove max-width on small screens */
+                max-width: none; /* Remove max-width on mobile */
+                white-space: normal; /* Allow text wrapping on mobile */
+                text-overflow: clip; /* Remove ellipsis on mobile */
             }
             .section-title-with-latency {
                 flex-direction: column;
@@ -1914,8 +1916,8 @@
                 const endTime = Date.now();
                 const latency = endTime - startTime;
                 updateLatencyDisplay(latency);
-                // Optionally, delete the ping document to keep the collection clean
-                // await pingDocRef.delete();
+                // Delete the ping document to keep the collection clean
+                await pingDocRef.delete();
             } catch (error) {
                 const endTime = Date.now();
                 const latency = endTime - startTime; // Still calculate, but it's a failed ping
@@ -1937,10 +1939,12 @@
             } else if (latency < 300) { // Good
                 color = 'var(--terminal-green)';
                 borderColor = 'var(--terminal-green)';
-            } else if (latency < 600) { // Moderate
+            } else { // Slow/Poor or Error
                 color = 'var(--warning)';
                 borderColor = 'var(--warning)';
-            } else { // Slow/Poor
+            }
+            // If it's an error, force error color
+            if (isError) {
                 color = 'var(--error)';
                 borderColor = 'var(--error)';
             }
@@ -2292,7 +2296,7 @@
                 'messages',
                 'notifications',
                 'users',
-                // 'ping', // Removed 'ping' from monitor to avoid logging latency pings
+                // 'ping', // Removed 'ping' from monitor to avoid logging ping events
                 // Adicione outras coleções aqui para monitoramento em tempo real
             ];
             let listeners = []; // To store unsubscribe functions
