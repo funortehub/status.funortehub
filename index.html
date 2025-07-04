@@ -1001,6 +1001,10 @@
                         ${isEditMode ? `<input type="text" id="edit-username" value="${currentReportUser.username || ''}">` : `<span>${currentReportUser.username || 'Não informado'}</span>`}
                     </div>
                     <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Senha:</label>
+                        ${isEditMode ? `<input type="text" id="edit-password" value="${currentReportUser.password || ''}">` : `<span>${currentReportUser.password || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
                         <label>Tipo de Usuário:</label>
                         <span>${currentReportUser.role || currentReportUser.type}</span> <!-- Role is usually fixed -->
                     </div>
@@ -1149,6 +1153,7 @@
                 cpf: document.getElementById('edit-cpf').value,
                 registration: document.getElementById('edit-registration').value,
                 username: document.getElementById('edit-username').value,
+                password: document.getElementById('edit-password').value, // Added password field
                 course: document.getElementById('edit-course') ? document.getElementById('edit-course').value : currentReportUser.course, // Only for students
                 status: document.getElementById('edit-status').value,
                 registrationStatus: document.getElementById('edit-registrationStatus').value,
@@ -1175,6 +1180,7 @@
                     const globalUpdateData = {
                         fullname: updatedData.fullname,
                         username: updatedData.username,
+                        password: updatedData.password, // Added password field
                         status: updatedData.status,
                         blockReason: updatedData.blockReason,
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
