@@ -5,26 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Funorte Hub - Debug Panel</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-dark: #0d1b2a;
-            --primary-light: #1b263b;
-            --accent: #e63946;
-            --white: #ffffff;
-            --gray: #f0f0f0;
+            --primary-dark: #1a1a2e; /* Darker background */
+            --primary-light: #16213e; /* Slightly lighter sections */
+            --accent: #0f4c75; /* Deep blue for accents */
+            --secondary-accent: #3282b8; /* Lighter blue for highlights */
+            --terminal-green: #00ff00; /* Classic terminal green */
+            --white: #e0e0e0; /* Off-white for text */
+            --gray: #a0a0a0; /* Lighter gray */
             --dark-gray: #333;
-            --light-gray: #e0e0e0;
+            --light-gray: #505050;
             --success: #2ecc71;
             --warning: #f39c12;
             --error: #e74c3c;
             --info: #3498db;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.3); /* Subtle shadow */
             --transition: all 0.3s ease;
+            --border-radius: 6px;
         }
 
         body {
-            font-family: Roboto, sans-serif;
+            font-family: 'Roboto Mono', monospace; /* Monospace for body */
             background-color: var(--primary-dark);
             color: var(--white);
             margin: 0;
@@ -34,7 +37,7 @@
             align-items: center;
             min-height: 100vh;
             box-sizing: border-box;
-            user-select: text; /* Allow text selection */
+            user-select: text;
             -webkit-user-select: text;
             -moz-user-select: text;
             -ms-user-select: text;
@@ -42,29 +45,34 @@
 
         .container {
             background-color: var(--primary-light);
-            border-radius: 12px;
+            border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             padding: 25px;
             width: 100%;
             max-width: 1200px;
             margin-bottom: 20px;
+            border: 1px solid var(--accent); /* Subtle border */
         }
 
         h1, h2 {
-            font-family: Poppins, sans-serif;
-            color: var(--accent);
+            font-family: 'Fira Code', monospace; /* Techy font for titles */
+            color: var(--secondary-accent); /* Lighter blue for titles */
             margin-bottom: 20px;
             text-align: center;
+            text-shadow: 0 0 5px rgba(50, 130, 184, 0.5); /* Subtle glow */
         }
 
         .section-title {
-            font-family: Poppins, sans-serif;
+            font-family: 'Fira Code', monospace;
             font-weight: 600;
             font-size: 1.3rem;
             color: var(--white);
+            margin-top: 30px;
             margin-bottom: 15px;
             border-bottom: 2px solid var(--accent);
             padding-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .btn-group {
@@ -77,9 +85,9 @@
 
         .btn {
             padding: 12px 20px;
-            border-radius: 8px;
-            border: none;
-            font-family: Poppins, sans-serif;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--accent); /* Border for buttons */
+            font-family: 'Roboto Mono', monospace;
             font-weight: 500;
             font-size: 0.95rem;
             text-align: center;
@@ -90,6 +98,7 @@
             align-items: center;
             gap: 8px;
             box-shadow: var(--shadow);
+            text-transform: uppercase;
         }
 
         .btn-primary {
@@ -97,9 +106,19 @@
             color: var(--white);
         }
 
+        .btn-primary:hover {
+            background-color: var(--secondary-accent);
+            box-shadow: 0 0 10px var(--secondary-accent);
+        }
+
         .btn-secondary {
             background-color: var(--primary-dark);
             color: var(--white);
+        }
+
+        .btn-secondary:hover {
+            background-color: #283a5e;
+            box-shadow: 0 0 10px rgba(22, 33, 62, 0.5);
         }
 
         .btn-info {
@@ -107,9 +126,19 @@
             color: var(--white);
         }
 
+        .btn-info:hover {
+            background-color: #2980b9;
+            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+        }
+
         .btn-success {
             background-color: var(--success);
             color: var(--white);
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
         }
 
         .btn-warning {
@@ -117,9 +146,19 @@
             color: var(--white);
         }
 
+        .btn-warning:hover {
+            background-color: #e67e22;
+            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+        }
+
         .btn-danger {
             background-color: var(--error);
             color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
         }
 
         .btn:active {
@@ -134,46 +173,49 @@
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
+            color: var(--secondary-accent);
         }
 
         .form-control {
             width: calc(100% - 24px);
             padding: 12px;
-            border-radius: 8px;
-            border: 2px solid var(--primary-dark);
-            background-color: rgba(255, 255, 255, 0.1);
-            color: var(--white);
+            border-radius: var(--border-radius);
+            border: 1px solid var(--accent);
+            background-color: rgba(0, 0, 0, 0.3); /* Darker input background */
+            color: var(--terminal-green); /* Green text for inputs */
             font-size: 1rem;
             transition: var(--transition);
         }
 
         .form-control:focus {
             outline: none;
-            border-color: var(--accent);
-            background-color: rgba(255, 255, 255, 0.15);
+            border-color: var(--secondary-accent);
+            box-shadow: 0 0 8px rgba(50, 130, 184, 0.5); /* Glow on focus */
+            background-color: rgba(0, 0, 0, 0.5);
         }
 
         select.form-control {
             appearance: none;
             -webkit-appearance: none;
-            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23ffffff%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-6.4H18.4c-5%200-9.3%201.8-13.2%206.4-3.9%204.5-6%2010-6%2016.3%200%206.2%202.1%2011.7%206%2016.3l128.8%20127.8c3.9%203.9%209.4%206%2015.8%206s11.9-2.1%2015.8-6L287%20102c3.9-4.5%206-10%206-16.3s-2.1-11.7-6-16.3z%22%2F%3E%3C%2Fsvg%3E');
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2300ff00%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13.2-6.4H18.4c-5%200-9.3%201.8-13.2%206.4-3.9%204.5-6%2010-6%2016.3%200%206.2%202.1%2011.7%206%2016.3l128.8%20127.8c3.9%203.9%209.4%206%2015.8%206s11.9-2.1%2015.8-6L287%20102c3.9-4.5%206-10%206-16.3s-2.1-11.7-6-16.3z%22%2F%3E%3C%2Fsvg%3E'); /* Green arrow */
             background-repeat: no-repeat;
             background-position: right 10px top 50%;
             background-size: 12px;
         }
 
         .terminal-container {
-            background-color: #000;
-            border-radius: 8px;
+            background-color: #000; /* Pure black for terminal */
+            border-radius: var(--border-radius);
             padding: 15px;
             margin-top: 20px;
             height: 300px;
             overflow-y: auto;
-            color: #0f0;
-            font-family: 'Courier New', Courier, monospace;
+            color: var(--terminal-green); /* Green text */
+            font-family: 'Fira Code', monospace; /* Fira Code for terminal */
             white-space: pre-wrap;
             word-break: break-all;
             border: 1px solid var(--accent);
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2); /* Inner glow */
         }
 
         .terminal-input-group {
@@ -183,45 +225,46 @@
 
         .terminal-input {
             flex-grow: 1;
-            background-color: #333;
-            border: 1px solid #555;
-            color: #0f0;
+            background-color: #0a0a0a; /* Slightly lighter black for input */
+            border: 1px solid var(--accent);
+            color: var(--terminal-green);
             padding: 10px;
-            border-radius: 5px;
-            font-family: 'Courier New', Courier, monospace;
+            border-radius: var(--border-radius);
+            font-family: 'Fira Code', monospace;
             outline: none;
         }
 
         .terminal-input::placeholder {
-            color: #888;
+            color: #505050; /* Darker placeholder */
         }
 
         .terminal-send-btn {
             background-color: var(--accent);
             color: var(--white);
-            border: none;
+            border: 1px solid var(--accent);
             padding: 10px 15px;
-            border-radius: 5px;
+            border-radius: var(--border-radius);
             margin-left: 10px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .terminal-send-btn:hover {
-            background-color: #c0392b;
+            background-color: var(--secondary-accent);
+            box-shadow: 0 0 8px var(--secondary-accent);
         }
 
         .log-entry {
             margin-bottom: 5px;
         }
 
-        .log-info { color: #0f0; }
-        .log-warning { color: #ff0; }
-        .log-error { color: #f00; }
-        .log-debug { color: #0ff; }
-        .log-api { color: #f90; }
-        .log-firestore { color: #00f; }
-        .log-user-input { color: #fff; }
+        .log-info { color: var(--terminal-green); }
+        .log-warning { color: var(--warning); }
+        .log-error { color: var(--error); }
+        .log-debug { color: #0ff; } /* Cyan for debug */
+        .log-api { color: #f90; } /* Orange for API */
+        .log-firestore { color: #00f; } /* Blue for Firestore */
+        .log-user-input { color: var(--white); } /* White for user input */
         .log-success { color: var(--success); }
 
         .image-preview-container {
@@ -232,7 +275,7 @@
         .image-preview-container img {
             max-width: 100%;
             height: auto;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             border: 2px solid var(--accent);
         }
@@ -241,24 +284,27 @@
             max-height: 400px;
             overflow-y: auto;
             border: 1px solid var(--primary-dark);
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             padding: 10px;
+            background-color: rgba(0, 0, 0, 0.2); /* Slightly transparent background */
         }
 
         .user-item {
             background-color: var(--primary-dark);
             padding: 10px 15px;
             margin-bottom: 8px;
-            border-radius: 5px;
+            border-radius: var(--border-radius);
             display: flex;
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, border 0.3s ease;
+            border: 1px solid transparent;
         }
 
         .user-item:hover {
-            background-color: rgba(27, 38, 59, 0.8);
+            background-color: rgba(22, 33, 62, 0.8);
+            border: 1px solid var(--secondary-accent);
         }
 
         .user-item-info {
@@ -279,7 +325,7 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: rgba(0, 0, 0, 0.8); /* Darker modal overlay */
             justify-content: center;
             align-items: center;
         }
@@ -288,13 +334,14 @@
             background-color: var(--primary-light);
             margin: auto;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: var(--border-radius);
             width: 90%;
             max-width: 800px;
-            box-shadow: var(--shadow);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7); /* Stronger shadow for modal */
             position: relative;
             max-height: 90vh;
             overflow-y: auto;
+            border: 1px solid var(--secondary-accent);
         }
 
         .modal-header {
@@ -302,18 +349,18 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            border-bottom: 1px solid var(--primary-dark);
+            border-bottom: 1px solid var(--accent);
             padding-bottom: 10px;
         }
 
         .modal-title {
-            font-family: Poppins, sans-serif;
+            font-family: 'Fira Code', monospace;
             font-size: 1.5rem;
-            color: var(--accent);
+            color: var(--secondary-accent);
         }
 
         .modal-close {
-            color: var(--light-gray);
+            color: var(--gray);
             font-size: 2rem;
             font-weight: bold;
             cursor: pointer;
@@ -328,16 +375,20 @@
         .report-content {
             background-color: var(--primary-dark);
             padding: 20px;
-            border-radius: 8px;
+            border-radius: var(--border-radius);
             color: var(--white);
             line-height: 1.6;
             font-size: 0.95rem;
+            border: 1px solid var(--accent);
         }
 
         .report-content h3 {
-            color: var(--accent);
+            color: var(--secondary-accent);
             margin-top: 20px;
             margin-bottom: 10px;
+            font-family: 'Fira Code', monospace;
+            border-bottom: 1px dashed var(--accent);
+            padding-bottom: 5px;
         }
 
         .report-content ul {
@@ -355,16 +406,18 @@
         }
 
         .report-content .diary-entry, .report-content .checkin-entry {
-            background-color: rgba(27, 38, 59, 0.5);
+            background-color: rgba(22, 33, 62, 0.5); /* Slightly transparent primary-light */
             padding: 10px;
-            border-radius: 5px;
+            border-radius: var(--border-radius);
             margin-bottom: 10px;
+            border: 1px solid var(--accent);
         }
 
         .report-content .diary-entry h4, .report-content .checkin-entry h4 {
             color: var(--warning);
             margin-top: 0;
             margin-bottom: 5px;
+            font-family: 'Fira Code', monospace;
         }
 
         .report-content .diary-entry p, .report-content .checkin-entry p {
@@ -382,7 +435,7 @@
             width: 100%;
             height: 80px;
             object-fit: cover;
-            border-radius: 5px;
+            border-radius: var(--border-radius);
             border: 1px solid var(--gray);
         }
 
@@ -390,7 +443,7 @@
             width: 20px;
             height: 20px;
             border: 2px solid rgba(255, 255, 255, 0.1);
-            border-top: 2px solid var(--accent);
+            border-top: 2px solid var(--secondary-accent); /* Accent color for spinner */
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto;
@@ -412,20 +465,22 @@
         .pagination-controls button {
             background-color: var(--primary-dark);
             color: var(--white);
-            border: none;
+            border: 1px solid var(--accent);
             padding: 8px 12px;
-            border-radius: 5px;
+            border-radius: var(--border-radius);
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: background-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .pagination-controls button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            box-shadow: none;
         }
 
         .pagination-controls button:hover:not(:disabled) {
-            background-color: rgba(27, 38, 59, 0.8);
+            background-color: rgba(22, 33, 62, 0.8);
+            box-shadow: 0 0 8px rgba(22, 33, 62, 0.5);
         }
 
         .search-input-group {
@@ -446,9 +501,9 @@
         }
 
         .report-content .editable-field label {
-            flex: 0 0 150px; /* Fixed width for labels */
+            flex: 0 0 150px;
             font-weight: bold;
-            color: var(--info);
+            color: var(--secondary-accent); /* Accent color for labels */
             margin-right: 10px;
         }
 
@@ -458,17 +513,18 @@
             flex-grow: 1;
             padding: 8px;
             border-radius: 5px;
-            border: 1px solid var(--primary-dark);
-            background-color: rgba(255, 255, 255, 0.05);
-            color: var(--white);
+            border: 1px solid var(--accent);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--terminal-green);
             font-size: 0.95rem;
         }
 
         .report-content .editable-field input:focus,
         .report-content .editable-field select:focus {
             outline: none;
-            border-color: var(--accent);
-            background-color: rgba(255, 255, 255, 0.1);
+            border-color: var(--secondary-accent);
+            background-color: rgba(0, 0, 0, 0.5);
+            box-shadow: 0 0 8px rgba(50, 130, 184, 0.5);
         }
 
         .report-content .editable-field.view-mode input,
@@ -477,6 +533,7 @@
             background-color: transparent;
             padding: 8px 0;
             cursor: default;
+            color: var(--white); /* White text in view mode */
         }
 
         .report-content .editable-field.view-mode input:focus,
@@ -484,6 +541,7 @@
             outline: none;
             border-color: transparent;
             background-color: transparent;
+            box-shadow: none;
         }
 
         @media (max-width: 768px) {
@@ -510,7 +568,7 @@
             .report-content .editable-field span,
             .report-content .editable-field input,
             .report-content .editable-field select {
-                width: calc(100% - 16px); /* Adjust for padding */
+                width: calc(100% - 16px);
             }
         }
     </style>
@@ -528,15 +586,15 @@
             <button class="terminal-send-btn" onclick="executeCommand()">Enviar</button>
         </div>
 
-        <div class="section-title" style="margin-top: 30px;">Monitoramento do Servidor em Tempo Real</div>
+        <div class="section-title">Monitoramento do Servidor em Tempo Real</div>
         <div class="terminal-container" id="firestore-monitor-terminal">
             <div class="log-entry log-info">Aguardando alterações no Servidor...</div>
         </div>
 
-        <div class="section-title" style="margin-top: 30px;">Testes de API</div>
+        <div class="section-title">Testes de API</div>
         <div class="image-preview-container" id="imgur-preview"></div>
 
-        <div class="section-title" style="margin-top: 30px;">Gerenciamento de Usuários</div>
+        <div class="section-title">Gerenciamento de Usuários</div>
         <div class="btn-group">
             <button class="btn btn-success" onclick="loadUsersForReport('alunos', false)">
                 <i class="fas fa-user-graduate"></i> Carregar Alunos
@@ -567,7 +625,7 @@
         </div>
 
 
-        <div class="section-title" style="margin-top: 30px;">Backup de Dados</div>
+        <div class="section-title">Backup de Dados</div>
         <div class="btn-group">
             <button class="btn btn-warning" onclick="backupFirestoreData()">
                 <i class="fas fa-download"></i> Fazer Backup do Servidor
