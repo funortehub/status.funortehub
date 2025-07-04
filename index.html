@@ -781,8 +781,8 @@
         /* Latency Display */
         #latency-display {
             position: absolute;
-            top: 15px;
-            right: 15px;
+            top: 5px; /* Adjusted to 5px */
+            right: 25px; /* Align with the right padding of the container */
             font-family: 'Fira Code', monospace;
             font-size: 0.9rem;
             padding: 5px 10px;
@@ -791,7 +791,23 @@
             border: 1px solid;
             transition: color 0.3s ease, border-color 0.3s ease;
             z-index: 10;
+            /* Ensure it's positioned relative to the container, not the terminal */
         }
+
+        /* Adjust section-title for spacing with latency display */
+        .section-title-with-latency {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative; /* To contain the latency display */
+        }
+
+        .section-title-with-latency .section-title-text {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
 
         @media (max-width: 768px) {
             .container {
@@ -819,6 +835,16 @@
             .report-content .editable-field select {
                 width: calc(100% - 16px);
             }
+            #latency-display {
+                position: static; /* Revert to static for smaller screens */
+                margin-top: 10px;
+                text-align: center;
+                width: 100%;
+            }
+            .section-title-with-latency {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
 </head>
@@ -826,10 +852,15 @@
     <div class="container">
         <h1><i class="fas fa-terminal"></i> Funorte Hub - Painel de Depuração <i class="fas fa-bug"></i></h1>
 
-        <div class="section-title"><i class="fas fa-code"></i> Terminal</div>
+        <!-- Moved latency display here, outside the terminal-container -->
+        <div class="section-title section-title-with-latency">
+            <div class="section-title-text">
+                <i class="fas fa-code"></i> Terminal
+            </div>
+            <div id="latency-display">Latência: -- ms</div>
+        </div>
         <div class="terminal-container" id="api-status-terminal">
             <div class="log-entry log-info">Iniciando Painel de Depuração...</div>
-            <div id="latency-display">Latência: -- ms</div> <!-- Latency display element -->
         </div>
         <div class="terminal-input-group">
             <input type="text" class="terminal-input" id="command-input" placeholder="Digite um comando (ex: /help)">
@@ -1904,10 +1935,12 @@
             } else if (latency < 300) { // Good
                 color = 'var(--terminal-green)';
                 borderColor = 'var(--terminal-green)';
-            } else if (latency < 600) { // Moderate
+            } else { // Slow/Poor or Error
                 color = 'var(--warning)';
                 borderColor = 'var(--warning)';
-            } else { // Slow/Poor
+            }
+            // If it's an error, force error color
+            if (isError) {
                 color = 'var(--error)';
                 borderColor = 'var(--error)';
             }
@@ -2082,7 +2115,8 @@
                 const teachersSnapshot = await db.collection('professores').get();
                 logToTerminal(`Total de Alunos: ${studentsSnapshot.size}`, 'info');
                 logToTerminal(`Total de Professores: ${teachersSnapshot.size}`, 'info');
-            } catch (error) {
+            }
+            catch (error) {
                 logToTerminal(`Erro ao contar usuários: ${error.message}`, 'error');
             }
         }
