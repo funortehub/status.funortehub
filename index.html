@@ -1688,11 +1688,27 @@
         // Backup Firestore Data
         async function backupFirestoreData() {
             logToTerminal('Iniciando backup de dados do Firestore...', 'info');
-            try {
-                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
-                const backupData = {};
+            // ATENÇÃO: O SDK do Firebase Web NÃO oferece uma maneira direta de listar TODAS as coleções
+            // dinamicamente. Você precisa listar as coleções que deseja fazer backup manualmente.
+            // Para um backup verdadeiramente completo e dinâmico, considere usar:
+            // 1. Firebase Admin SDK (Node.js, Python, etc.) em um ambiente de servidor.
+            // 2. A ferramenta de linha de comando `gcloud firestore export`.
+            // As coleções abaixo são as que foram identificadas no seu código.
+            const collectionsToBackup = [
+                'alunos',
+                'professores',
+                'Diario',
+                'checkins',
+                'messages',
+                'notifications',
+                'users',
+                // Adicione outras coleções aqui se existirem no seu Firestore
+                // Ex: 'configuracoes', 'eventos', 'logs', etc.
+            ];
+            const backupData = {};
 
-                for (const collectionName of collections) {
+            try {
+                for (const collectionName of collectionsToBackup) {
                     logToTerminal(`Fazendo backup da coleção: ${collectionName}...`, 'info');
                     const snapshot = await db.collection(collectionName).get();
                     backupData[collectionName] = snapshot.docs.map(doc => {
@@ -2073,7 +2089,19 @@
 
         // Firestore Real-time Monitor
         function setupFirestoreMonitor() {
-            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
+            // ATENÇÃO: Assim como no backup, o monitoramento precisa de uma lista explícita de coleções.
+            // Se novas coleções forem adicionadas ao Firestore, elas precisarão ser incluídas aqui
+            // para serem monitoradas.
+            const collectionsToMonitor = [
+                'alunos',
+                'professores',
+                'Diario',
+                'checkins',
+                'messages',
+                'notifications',
+                'users',
+                // Adicione outras coleções aqui para monitoramento em tempo real
+            ];
             let listeners = []; // To store unsubscribe functions
 
             // Clear previous listeners if any
