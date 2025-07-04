@@ -781,7 +781,7 @@
         /* Latency Display */
         #latency-display {
             position: absolute;
-            top: 5px; /* Adjusted to 5px */
+            top: 0px; /* Adjusted to 0px */
             right: 25px; /* Align with the right padding of the container */
             font-family: 'Fira Code', monospace;
             font-size: 0.9rem;
@@ -791,7 +791,10 @@
             border: 1px solid;
             transition: color 0.3s ease, border-color 0.3s ease;
             z-index: 10;
-            /* Ensure it's positioned relative to the container, not the terminal */
+            max-width: 150px; /* Limit width */
+            white-space: nowrap; /* Prevent text wrapping */
+            overflow: hidden; /* Hide overflow text */
+            text-overflow: ellipsis; /* Add ellipsis for overflow */
         }
 
         /* Adjust section-title for spacing with latency display */
@@ -840,6 +843,7 @@
                 margin-top: 10px;
                 text-align: center;
                 width: 100%;
+                max-width: none; /* Remove max-width on small screens */
             }
             .section-title-with-latency {
                 flex-direction: column;
@@ -1910,14 +1914,12 @@
                 const endTime = Date.now();
                 const latency = endTime - startTime;
                 updateLatencyDisplay(latency);
-                // Removed: logToTerminal(`Ping Firestore bem-sucedido. Latência: ${latency}ms`, 'success');
                 // Optionally, delete the ping document to keep the collection clean
                 // await pingDocRef.delete();
             } catch (error) {
                 const endTime = Date.now();
                 const latency = endTime - startTime; // Still calculate, but it's a failed ping
                 updateLatencyDisplay(latency, true); // Indicate error
-                // Removed: logToTerminal(`Falha no ping Firestore: ${error.message}. Latência (erro): ${latency}ms`, 'error');
             }
         }
 
@@ -1935,12 +1937,10 @@
             } else if (latency < 300) { // Good
                 color = 'var(--terminal-green)';
                 borderColor = 'var(--terminal-green)';
-            } else { // Slow/Poor or Error
+            } else if (latency < 600) { // Moderate
                 color = 'var(--warning)';
                 borderColor = 'var(--warning)';
-            }
-            // If it's an error, force error color
-            if (isError) {
+            } else { // Slow/Poor
                 color = 'var(--error)';
                 borderColor = 'var(--error)';
             }
@@ -2292,7 +2292,7 @@
                 'messages',
                 'notifications',
                 'users',
-                'ping', // Added 'ping' to monitor
+                // 'ping', // Removed 'ping' from monitor to avoid logging latency pings
                 // Adicione outras coleções aqui para monitoramento em tempo real
             ];
             let listeners = []; // To store unsubscribe functions
