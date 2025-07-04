@@ -623,6 +623,9 @@
         const imgurClientId = '4ae8b96c539d446';
         const imgurAccessToken = '898e039bb7db651c7b94f4d104a60aae3f5c6ff0'; // Replace with a valid token if needed
 
+        // Admin Password
+        const ADMIN_PASSWORD = "admin123";
+
         // Initialize Firebase
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
@@ -1330,7 +1333,7 @@
                     logToTerminal('/help - Mostra esta lista de comandos.', 'info');
                     logToTerminal('/clear - Limpa o terminal de status da API.', 'info');
                     logToTerminal('/clear-monitor - Limpa o terminal de monitoramento do servidor.', 'info');
-                    logToTerminal('/show-api - Mostra as credenciais completas das APIs.', 'info');
+                    logToTerminal('/show-api - Mostra as credenciais completas das APIs (requer senha de administrador).', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
                     logToTerminal('/load-students - Carrega a lista de alunos para relatórios.', 'info');
@@ -1351,7 +1354,12 @@
                     logToTerminal('Terminal de monitoramento limpo.', 'info');
                     break;
                 case 'show-api':
-                    displayApiCredentials(true); // Show full credentials
+                    const password = prompt("Por favor, digite a senha de administrador para ver as credenciais da API:");
+                    if (password === ADMIN_PASSWORD) {
+                        displayApiCredentials(true); // Show full credentials
+                    } else {
+                        logToTerminal('Senha incorreta. Acesso negado.', 'error');
+                    }
                     break;
                 case 'test-imgur':
                     testImgurUpload();
