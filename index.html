@@ -579,6 +579,10 @@
         const usersPerPage = 10;
         let currentLoadedUserType = ''; // To keep track of 'alunos' or 'professores'
 
+        // Store original registrationStatus for students before maintenance
+        let originalRegistrationStatus = {};
+        const MAINTENANCE_MESSAGE_DOC_ID = 'maintenance_message';
+
         // List of available commands for autocompletion
         const availableCommands = [
             '/help',
@@ -770,6 +774,14 @@
                     allUsers.push(user);
                 });
                 logToTerminal(`${allUsers.length} ${type} carregados com sucesso.`, 'success');
+
+                // Log full list to terminal
+                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
+                allUsers.forEach(user => {
+                    logToTerminal(`ID: ${user.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}`, 'debug');
+                });
+                logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
+
 
                 currentPage = 1; // Reset to first page
                 filterAndPaginateUsers(); // Apply filter and render first page
@@ -1012,7 +1024,7 @@
         async function backupFirestoreData() {
             logToTerminal('Iniciando backup de dados do Firestore...', 'info');
             try {
-                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users', 'maintenance']; // Added maintenance
+                const collections = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
                 const backupData = {};
 
                 for (const collectionName of collections) {
@@ -1095,14 +1107,14 @@
                     logToTerminal('/show-api - Mostra as credenciais completas das APIs.', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
-                    logToTerminal('/load-students - Carrega e exibe a lista completa de alunos no terminal.', 'info');
-                    logToTerminal('/load-teachers - Carrega e exibe a lista completa de professores no terminal.', 'info');
+                    logToTerminal('/load-students - Carrega e lista todos os alunos no terminal.', 'info');
+                    logToTerminal('/load-teachers - Carrega e lista todos os professores no terminal.', 'info');
                     logToTerminal('/backup - Realiza o backup de todos os dados do Firestore.', 'info');
                     logToTerminal('/count-users - Conta o número total de alunos e professores.', 'info');
                     logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
                     logToTerminal('/set-status <username> <status (active/blocked)> [reason] - Altera o status de um usuário (active/blocked).', 'info');
                     logToTerminal('/delete-user <username> - Exclui um usuário.', 'info');
-                    logToTerminal('/maintenance <on/off> - Ativa ou desativa o modo de manutenção do servidor.', 'info');
+                    logToTerminal('/maintenance <on/off> - Ativa/desativa o modo de manutenção do servidor.', 'info');
                     logToTerminal('--------------------------', 'info');
                     break;
                 case 'clear':
@@ -1123,10 +1135,10 @@
                     testFirestoreConnection();
                     break;
                 case 'load-students':
-                    await loadAndDisplayAllUsersInTerminal('alunos');
+                    await loadUsersAndListInTerminal('alunos');
                     break;
                 case 'load-teachers':
-                    await loadAndDisplayAllUsersInTerminal('professores');
+                    await loadUsersAndListInTerminal('professores');
                     break;
                 case 'backup':
                     backupFirestoreData();
@@ -1160,15 +1172,19 @@
                         logToTerminal('Uso: /maintenance <on/off>', 'warning');
                         return;
                     }
-                    await setMaintenanceMode(params[0]);
+                    if (params[0] === 'on') {
+                        await setMaintenanceMode(true);
+                    } else {
+                        await setMaintenanceMode(false);
+                    }
                     break;
                 default:
                     logToTerminal(`Comando desconhecido: "${cmd}". Digite /help para ver os comandos disponíveis.`, 'error');
             }
         }
 
-        async function loadAndDisplayAllUsersInTerminal(type) {
-            logToTerminal(`Carregando lista completa de ${type} para o terminal...`, 'info');
+        async function loadUsersAndListInTerminal(type) {
+            logToTerminal(`Carregando e listando todos os ${type}...`, 'info');
             try {
                 const collectionRef = db.collection(type);
                 const snapshot = await collectionRef.orderBy('fullname').get();
@@ -1178,15 +1194,15 @@
                     return;
                 }
 
-                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} (${snapshot.size}) ---`, 'info');
+                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} (${snapshot.size} encontrados) ---`, 'info');
                 snapshot.forEach(doc => {
                     const user = doc.data();
-                    logToTerminal(`ID: ${doc.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}`, 'debug');
+                    logToTerminal(`ID: ${doc.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}, Reg. Status: ${user.registrationStatus || 'N/A'}`, 'debug');
                 });
                 logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
 
             } catch (error) {
-                logToTerminal(`Erro ao carregar ${type} para o terminal: ${error.message}`, 'error');
+                logToTerminal(`Erro ao carregar e listar ${type}: ${error.message}`, 'error');
             }
         }
 
@@ -1305,23 +1321,79 @@
             }
         }
 
-        async function setMaintenanceMode(status) {
-            logToTerminal(`Definindo modo de manutenção para: ${status}...`, 'info');
+        async function setMaintenanceMode(isOn) {
+            logToTerminal(`Iniciando modo de manutenção: ${isOn ? 'ON' : 'OFF'}...`, 'info');
+            const messagesCollection = db.collection('messages');
+            const alunosCollection = db.collection('alunos');
+
             try {
-                const maintenanceDocRef = db.collection('maintenance').doc('status');
-                await maintenanceDocRef.set({
-                    active: status === 'on',
-                    lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                });
-                logToTerminal(`Modo de manutenção definido para "${status}" com sucesso.`, 'success');
+                if (isOn) {
+                    // 1. Create maintenance message
+                    const maintenanceMessage = {
+                        content: "O servidor entrou em manutenção. Voltaremos nas próximas horas!",
+                        createdAt: firebase.firestore.Timestamp.fromDate(new Date('2000-01-01T21:50:33-03:00')), // Specific date
+                        expiration: firebase.firestore.Timestamp.fromDate(new Date('2050-01-01T21:50:33-03:00')), // Specific date
+                        recipientType: "all",
+                        senderId: "admin",
+                        senderName: "Administrador",
+                        title: "Mensagem do T.I"
+                    };
+                    await messagesCollection.doc(MAINTENANCE_MESSAGE_DOC_ID).set(maintenanceMessage);
+                    logToTerminal('Mensagem de manutenção criada/atualizada na coleção "messages".', 'success');
+
+                    // 2. Change registrationStatus of all students to "pending"
+                    //    and store original status for those not already pending
+                    originalRegistrationStatus = {}; // Reset
+                    const studentsSnapshot = await alunosCollection.get();
+                    const batch = db.batch();
+                    let studentsUpdated = 0;
+
+                    studentsSnapshot.forEach(doc => {
+                        const studentData = doc.data();
+                        if (studentData.registrationStatus !== 'pending') {
+                            originalRegistrationStatus[doc.id] = studentData.registrationStatus || 'approved'; // Store original status
+                            batch.update(alunosCollection.doc(doc.id), { registrationStatus: 'pending' });
+                            studentsUpdated++;
+                        } else {
+                            // If already pending, still store it so we don't change it back to approved
+                            originalRegistrationStatus[doc.id] = 'pending';
+                        }
+                    });
+                    await batch.commit();
+                    logToTerminal(`${studentsUpdated} alunos tiveram o 'registrationStatus' alterado para 'pending'.`, 'success');
+                    logToTerminal('Modo de manutenção ATIVADO.', 'success');
+
+                } else {
+                    // 1. Delete maintenance message
+                    await messagesCollection.doc(MAINTENANCE_MESSAGE_DOC_ID).delete();
+                    logToTerminal('Mensagem de manutenção removida da coleção "messages".', 'success');
+
+                    // 2. Revert registrationStatus for students (except those originally pending)
+                    const studentsSnapshot = await alunosCollection.get();
+                    const batch = db.batch();
+                    let studentsReverted = 0;
+
+                    studentsSnapshot.forEach(doc => {
+                        const studentData = doc.data();
+                        // Only revert if the original status was NOT 'pending'
+                        if (originalRegistrationStatus[doc.id] !== 'pending' && studentData.registrationStatus === 'pending') {
+                            batch.update(alunosCollection.doc(doc.id), { registrationStatus: 'approved' });
+                            studentsReverted++;
+                        }
+                    });
+                    await batch.commit();
+                    logToTerminal(`${studentsReverted} alunos tiveram o 'registrationStatus' revertido para 'approved'.`, 'success');
+                    originalRegistrationStatus = {}; // Clear stored statuses
+                    logToTerminal('Modo de manutenção DESATIVADO.', 'success');
+                }
             } catch (error) {
-                logToTerminal(`Erro ao definir modo de manutenção: ${error.message}`, 'error');
+                logToTerminal(`Erro ao ${isOn ? 'ativar' : 'desativar'} modo de manutenção: ${error.message}`, 'error');
             }
         }
 
         // Firestore Real-time Monitor
         function setupFirestoreMonitor() {
-            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users', 'maintenance']; // Added maintenance
+            const collectionsToMonitor = ['alunos', 'professores', 'Diario', 'checkins', 'messages', 'notifications', 'users'];
             let listeners = []; // To store unsubscribe functions
 
             // Clear previous listeners if any
