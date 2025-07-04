@@ -438,6 +438,54 @@
             flex-grow: 1;
         }
 
+        /* Styles for editable fields in modal */
+        .report-content .editable-field {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .report-content .editable-field label {
+            flex: 0 0 150px; /* Fixed width for labels */
+            font-weight: bold;
+            color: var(--info);
+            margin-right: 10px;
+        }
+
+        .report-content .editable-field span,
+        .report-content .editable-field input,
+        .report-content .editable-field select {
+            flex-grow: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid var(--primary-dark);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--white);
+            font-size: 0.95rem;
+        }
+
+        .report-content .editable-field input:focus,
+        .report-content .editable-field select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .report-content .editable-field.view-mode input,
+        .report-content .editable-field.view-mode select {
+            border: none;
+            background-color: transparent;
+            padding: 8px 0;
+            cursor: default;
+        }
+
+        .report-content .editable-field.view-mode input:focus,
+        .report-content .editable-field.view-mode select:focus {
+            outline: none;
+            border-color: transparent;
+            background-color: transparent;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -450,6 +498,19 @@
             }
             .search-input-group {
                 flex-direction: column;
+            }
+            .report-content .editable-field {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .report-content .editable-field label {
+                margin-bottom: 5px;
+                width: 100%;
+            }
+            .report-content .editable-field span,
+            .report-content .editable-field input,
+            .report-content .editable-field select {
+                width: calc(100% - 16px); /* Adjust for padding */
             }
         }
     </style>
@@ -525,7 +586,16 @@
                 <!-- Conteúdo do relatório será injetado aqui -->
             </div>
             <div class="btn-group" style="margin-top: 20px;">
-                <button class="btn btn-primary" onclick="downloadReportPdf()">
+                <button class="btn btn-primary" id="edit-report-btn" onclick="toggleEditMode()">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="btn btn-success" id="save-report-btn" style="display: none;" onclick="saveUserReport()">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+                <button class="btn btn-secondary" id="cancel-edit-btn" style="display: none;" onclick="toggleEditMode(false)">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button class="btn btn-info" onclick="downloadReportPdf()">
                     <i class="fas fa-download"></i> Baixar PDF
                 </button>
             </div>
@@ -571,6 +641,10 @@
         const prevUserPageBtn = document.getElementById('prev-user-page-btn');
         const nextUserPageBtn = document.getElementById('next-user-page-btn');
         const userPageInfo = document.getElementById('user-page-info');
+        const editReportBtn = document.getElementById('edit-report-btn');
+        const saveReportBtn = document.getElementById('save-report-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+
 
         let allUsers = []; // Stores all loaded students/teachers for reports
         let filteredUsers = []; // Stores users after search filter
@@ -578,10 +652,7 @@
         let currentPage = 1;
         const usersPerPage = 10;
         let currentLoadedUserType = ''; // To keep track of 'alunos' or 'professores'
-
-        // Store original registrationStatus for students before maintenance
-        let originalRegistrationStatus = {};
-        const MAINTENANCE_MESSAGE_DOC_ID = 'maintenance_message';
+        let isEditMode = false; // Track if the modal is in edit mode
 
         // List of available commands for autocompletion
         const availableCommands = [
@@ -597,9 +668,7 @@
             '/get-user',
             '/set-status',
             '/delete-user',
-            '/show-api',
-            '/maintenance on',
-            '/maintenance off'
+            '/show-api'
         ];
 
         // Utility Functions
@@ -612,6 +681,22 @@
         }
 
         function formatDate(dateInput) {
+            if (!dateInput) return ''; // Return empty string for input fields
+            try {
+                let date;
+                if (dateInput.toDate) {
+                    date = dateInput.toDate();
+                } else {
+                    date = new Date(dateInput);
+                }
+                // Format to YYYY-MM-DD for input type="date"
+                return date.toISOString().split('T')[0];
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function formatDisplayDate(dateInput) {
             if (!dateInput) return 'Não informado';
             try {
                 let date;
@@ -660,6 +745,19 @@
             return courses[courseId] || 'Não especificado';
         }
 
+        function getCourseId(courseName) {
+            const courses = {
+                'Medicina': 'medicine',
+                'Enfermagem': 'nursing',
+                'Odontologia': 'dentistry',
+                'Fisioterapia': 'physiotherapy',
+                'Nutrição': 'nutrition',
+                'BIS': 'bis',
+                'BACIMED': 'bacimed'
+            };
+            return courses[courseName] || '';
+        }
+
         // API Status and Credential Display
         function displayApiCredentials(full = false) {
             logToTerminal('--- Credenciais da API ---', 'debug');
@@ -669,9 +767,9 @@
                 logToTerminal(`Imgur Client ID: ${imgurClientId}`, 'debug');
                 logToTerminal(`Imgur Access Token: ${imgurAccessToken}`, 'debug');
             } else {
-                logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey.substring(0, 5)}...${firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5)}`, 'debug');
-                logToTerminal(`Imgur Client ID: ${imgurClientId.substring(0, 5)}...${imgurClientId.substring(imgurClientId.length - 5)}`, 'debug');
-                logToTerminal(`Imgur Access Token: ${imgurAccessToken.substring(0, 5)}...${imgurAccessToken.substring(imgurAccessToken.length - 5)}`, 'debug');
+                logToTerminal(`Firebase API Key: ${firebaseConfig.apiKey.substring(0, 5)}...${firebaseConfig.apiKey.length > 5 ? firebaseConfig.apiKey.substring(firebaseConfig.apiKey.length - 5) : ''}`, 'debug');
+                logToTerminal(`Imgur Client ID: ${imgurClientId.substring(0, 5)}...${imgurClientId.length > 5 ? imgurClientId.substring(imgurClientId.length - 5) : ''}`, 'debug');
+                logToTerminal(`Imgur Access Token: ${imgurAccessToken.substring(0, 5)}...${imgurAccessToken.length > 5 ? imgurAccessToken.substring(imgurAccessToken.length - 5) : ''}`, 'debug');
             }
             logToTerminal('-------------------------', 'debug');
         }
@@ -775,14 +873,6 @@
                 });
                 logToTerminal(`${allUsers.length} ${type} carregados com sucesso.`, 'success');
 
-                // Log full list to terminal
-                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
-                allUsers.forEach(user => {
-                    logToTerminal(`ID: ${user.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}`, 'debug');
-                });
-                logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
-
-
                 currentPage = 1; // Reset to first page
                 filterAndPaginateUsers(); // Apply filter and render first page
 
@@ -867,10 +957,11 @@
                 return;
             }
             currentReportUser = user;
-            await generateSpecificUserReport(true); // Generate and display in modal
+            isEditMode = false; // Always start in view mode
+            await generateSpecificUserReport(); // Generate and display in modal
         }
 
-        async function generateSpecificUserReport(displayOnly = false) {
+        async function generateSpecificUserReport() {
             if (!currentReportUser) {
                 logToTerminal('Nenhum usuário selecionado para relatório específico.', 'warning');
                 alert('Por favor, selecione um usuário primeiro.');
@@ -880,24 +971,78 @@
             logToTerminal(`Gerando relatório para ${currentReportUser.fullname}...`, 'info');
             reportModalTitle.textContent = `Relatório de ${currentReportUser.fullname}`;
             reportModalBody.innerHTML = '<div class="spinner"></div><p>Gerando relatório...</p>';
-            if (!displayOnly) reportModal.style.display = 'flex';
+            reportModal.style.display = 'flex';
+            updateModalButtons(); // Show/hide edit/save buttons
 
             try {
                 let reportHtml = `
                     <h3>Informações Pessoais</h3>
-                    <ul>
-                        <li><span class="data-label">Nome Completo:</span> ${currentReportUser.fullname}</li>
-                        <li><span class="data-label">Data de Nascimento:</span> ${formatDate(currentReportUser.birthdate)}</li>
-                        <li><span class="data-label">CPF:</span> ${currentReportUser.cpf}</li>
-                        <li><span class="data-label">Matrícula:</span> ${currentReportUser.registration || 'N/A'}</li>
-                        <li><span class="data-label">Nome de Usuário:</span> ${currentReportUser.username}</li>
-                        <li><span class="data-label">Tipo de Usuário:</span> ${currentReportUser.role || currentReportUser.type}</li>
-                        <li><span class="data-label">Curso:</span> ${getCourseName(currentReportUser.course || 'N/A')}</li>
-                        <li><span class="data-label">Status da Conta:</span> ${currentReportUser.status} ${currentReportUser.status === 'blocked' ? `(Motivo: ${currentReportUser.blockReason || 'Não informado'})` : ''}</li>
-                        <li><span class="data-label">Status de Registro:</span> ${currentReportUser.registrationStatus || 'N/A'}</li>
-                        <li><span class="data-label">Tipo de Internato:</span> ${currentReportUser.internatoType || 'N/A'}</li>
-                        <li><span class="data-label">Criado em:</span> ${formatDateTime(currentReportUser.createdAt)}</li>
-                    </ul>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Nome Completo:</label>
+                        ${isEditMode ? `<input type="text" id="edit-fullname" value="${currentReportUser.fullname || ''}">` : `<span>${currentReportUser.fullname || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Data de Nascimento:</label>
+                        ${isEditMode ? `<input type="date" id="edit-birthdate" value="${formatDate(currentReportUser.birthdate)}">` : `<span>${formatDisplayDate(currentReportUser.birthdate)}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>CPF:</label>
+                        ${isEditMode ? `<input type="text" id="edit-cpf" value="${currentReportUser.cpf || ''}">` : `<span>${currentReportUser.cpf || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Matrícula:</label>
+                        ${isEditMode ? `<input type="text" id="edit-registration" value="${currentReportUser.registration || ''}">` : `<span>${currentReportUser.registration || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Nome de Usuário:</label>
+                        ${isEditMode ? `<input type="text" id="edit-username" value="${currentReportUser.username || ''}">` : `<span>${currentReportUser.username || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Tipo de Usuário:</label>
+                        <span>${currentReportUser.role || currentReportUser.type}</span> <!-- Role is usually fixed -->
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Curso:</label>
+                        ${isEditMode ? `
+                            <select id="edit-course">
+                                <option value="">Selecione</option>
+                                <option value="medicine" ${currentReportUser.course === 'medicine' ? 'selected' : ''}>Medicina</option>
+                                <option value="nursing" ${currentReportUser.course === 'nursing' ? 'selected' : ''}>Enfermagem</option>
+                                <option value="dentistry" ${currentReportUser.course === 'dentistry' ? 'selected' : ''}>Odontologia</option>
+                                <option value="physiotherapy" ${currentReportUser.course === 'physiotherapy' ? 'selected' : ''}>Fisioterapia</option>
+                                <option value="nutrition" ${currentReportUser.course === 'nutrition' ? 'selected' : ''}>Nutrição</option>
+                                <option value="bis" ${currentReportUser.course === 'bis' ? 'selected' : ''}>BIS</option>
+                                <option value="bacimed" ${currentReportUser.course === 'bacimed' ? 'selected' : ''}>BACIMED</option>
+                            </select>
+                        ` : `<span>${getCourseName(currentReportUser.course || 'N/A')}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Status da Conta:</label>
+                        ${isEditMode ? `
+                            <select id="edit-status">
+                                <option value="active" ${currentReportUser.status === 'active' ? 'selected' : ''}>Ativo</option>
+                                <option value="blocked" ${currentReportUser.status === 'blocked' ? 'selected' : ''}>Bloqueado</option>
+                            </select>
+                        ` : `<span>${currentReportUser.status}</span>`}
+                    </div>
+                    ${currentReportUser.status === 'blocked' ? `
+                        <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                            <label>Motivo do Bloqueio:</label>
+                            ${isEditMode ? `<input type="text" id="edit-blockReason" value="${currentReportUser.blockReason || ''}">` : `<span>${currentReportUser.blockReason || 'Não informado'}</span>`}
+                        </div>
+                    ` : ''}
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Status de Registro:</label>
+                        ${isEditMode ? `<input type="text" id="edit-registrationStatus" value="${currentReportUser.registrationStatus || ''}">` : `<span>${currentReportUser.registrationStatus || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
+                        <label>Tipo de Internato:</label>
+                        ${isEditMode ? `<input type="text" id="edit-internatoType" value="${currentReportUser.internatoType || ''}">` : `<span>${currentReportUser.internatoType || 'Não informado'}</span>`}
+                    </div>
+                    <div class="editable-field view-mode">
+                        <label>Criado em:</label>
+                        <span>${formatDateTime(currentReportUser.createdAt)}</span>
+                    </div>
                 `;
 
                 if (currentReportUser.type === 'alunos') {
@@ -916,7 +1061,7 @@
                             reportHtml += `
                                 <div class="diary-entry">
                                     <h4>${diary.title}</h4>
-                                    <p><span class="data-label">Data:</span> ${formatDate(diary.date)}</p>
+                                    <p><span class="data-label">Data:</span> ${formatDisplayDate(diary.date)}</p>
                                     <p><span class="data-label">Professor:</span> ${diary.professorName || 'N/A'}</p>
                                     <p><span class="data-label">Status:</span> ${diary.status}</p>
                                     ${diary.grade !== undefined && diary.grade !== null ? `<p><span class="data-label">Nota:</span> ${diary.grade}</p>` : ''}
@@ -961,7 +1106,6 @@
 
                 reportModalBody.innerHTML = reportHtml;
                 logToTerminal(`Relatório para ${currentReportUser.fullname} gerado com sucesso.`, 'success');
-                if (displayOnly) reportModal.style.display = 'flex';
 
             } catch (error) {
                 logToTerminal(`Erro ao gerar relatório para ${currentReportUser.fullname}: ${error.message}`, 'error');
@@ -969,8 +1113,90 @@
             }
         }
 
+        function updateModalButtons() {
+            if (isEditMode) {
+                editReportBtn.style.display = 'none';
+                saveReportBtn.style.display = 'flex';
+                cancelEditBtn.style.display = 'flex';
+            } else {
+                editReportBtn.style.display = 'flex';
+                saveReportBtn.style.display = 'none';
+                cancelEditBtn.style.display = 'none';
+            }
+        }
+
+        function toggleEditMode(enable = !isEditMode) {
+            isEditMode = enable;
+            generateSpecificUserReport(); // Re-render the report in the new mode
+        }
+
+        async function saveUserReport() {
+            if (!currentReportUser) {
+                logToTerminal('Nenhum usuário selecionado para salvar.', 'warning');
+                return;
+            }
+
+            logToTerminal(`Salvando alterações para ${currentReportUser.fullname}...`, 'info');
+            const userId = currentReportUser.id;
+            const userType = currentReportUser.type; // 'alunos' or 'professores'
+
+            const updatedData = {
+                fullname: document.getElementById('edit-fullname').value,
+                birthdate: new Date(document.getElementById('edit-birthdate').value), // Convert to Date object
+                cpf: document.getElementById('edit-cpf').value,
+                registration: document.getElementById('edit-registration').value,
+                username: document.getElementById('edit-username').value,
+                course: document.getElementById('edit-course') ? document.getElementById('edit-course').value : currentReportUser.course, // Only for students
+                status: document.getElementById('edit-status').value,
+                registrationStatus: document.getElementById('edit-registrationStatus').value,
+                internatoType: document.getElementById('edit-internatoType').value,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            // Handle blockReason specifically
+            if (updatedData.status === 'blocked') {
+                updatedData.blockReason = document.getElementById('edit-blockReason') ? document.getElementById('edit-blockReason').value : '';
+            } else {
+                updatedData.blockReason = ''; // Clear reason if status is not blocked
+            }
+
+            try {
+                // Update in the specific collection (alunos/professores)
+                await db.collection(userType).doc(userId).update(updatedData);
+
+                // Also update in the 'users' collection if relevant fields exist there
+                const userDocRef = db.collection('users').where('userId', '==', userId).limit(1);
+                const userDocSnapshot = await userDocRef.get();
+                if (!userDocSnapshot.empty) {
+                    const userGlobalDoc = userDocSnapshot.docs[0];
+                    const globalUpdateData = {
+                        fullname: updatedData.fullname,
+                        username: updatedData.username,
+                        status: updatedData.status,
+                        blockReason: updatedData.blockReason,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    await userGlobalDoc.ref.update(globalUpdateData);
+                }
+
+                logToTerminal(`Dados do usuário ${currentReportUser.fullname} atualizados com sucesso no Firestore.`, 'success');
+                // Update currentReportUser object with new data
+                currentReportUser = { ...currentReportUser, ...updatedData };
+                // Re-render in view mode
+                toggleEditMode(false);
+                // Reload the main user list to reflect changes
+                loadUsersForReport(currentLoadedUserType);
+
+            } catch (error) {
+                logToTerminal(`Erro ao salvar dados do usuário: ${error.message}`, 'error');
+                alert(`Erro ao salvar dados: ${error.message}`);
+            }
+        }
+
+
         function closeReportModal() {
             reportModal.style.display = 'none';
+            isEditMode = false; // Reset edit mode when closing
         }
 
         async function downloadReportPdf() {
@@ -1107,14 +1333,13 @@
                     logToTerminal('/show-api - Mostra as credenciais completas das APIs.', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
-                    logToTerminal('/load-students - Carrega e lista todos os alunos no terminal.', 'info');
-                    logToTerminal('/load-teachers - Carrega e lista todos os professores no terminal.', 'info');
+                    logToTerminal('/load-students - Carrega a lista de alunos para relatórios.', 'info');
+                    logToTerminal('/load-teachers - Carrega a lista de professores para relatórios.', 'info');
                     logToTerminal('/backup - Realiza o backup de todos os dados do Firestore.', 'info');
                     logToTerminal('/count-users - Conta o número total de alunos e professores.', 'info');
                     logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
                     logToTerminal('/set-status <username> <status (active/blocked)> [reason] - Altera o status de um usuário (active/blocked).', 'info');
                     logToTerminal('/delete-user <username> - Exclui um usuário.', 'info');
-                    logToTerminal('/maintenance <on/off> - Ativa/desativa o modo de manutenção do servidor.', 'info');
                     logToTerminal('--------------------------', 'info');
                     break;
                 case 'clear':
@@ -1135,10 +1360,10 @@
                     testFirestoreConnection();
                     break;
                 case 'load-students':
-                    await loadUsersAndListInTerminal('alunos');
+                    loadUsersForReport('alunos');
                     break;
                 case 'load-teachers':
-                    await loadUsersAndListInTerminal('professores');
+                    loadUsersForReport('professores');
                     break;
                 case 'backup':
                     backupFirestoreData();
@@ -1167,42 +1392,8 @@
                     }
                     await deleteUserByUsername(params[0]);
                     break;
-                case 'maintenance':
-                    if (params.length < 1 || (params[0] !== 'on' && params[0] !== 'off')) {
-                        logToTerminal('Uso: /maintenance <on/off>', 'warning');
-                        return;
-                    }
-                    if (params[0] === 'on') {
-                        await setMaintenanceMode(true);
-                    } else {
-                        await setMaintenanceMode(false);
-                    }
-                    break;
                 default:
                     logToTerminal(`Comando desconhecido: "${cmd}". Digite /help para ver os comandos disponíveis.`, 'error');
-            }
-        }
-
-        async function loadUsersAndListInTerminal(type) {
-            logToTerminal(`Carregando e listando todos os ${type}...`, 'info');
-            try {
-                const collectionRef = db.collection(type);
-                const snapshot = await collectionRef.orderBy('fullname').get();
-
-                if (snapshot.empty) {
-                    logToTerminal(`Nenhum ${type} encontrado.`, 'warning');
-                    return;
-                }
-
-                logToTerminal(`--- Lista Completa de ${type.charAt(0).toUpperCase() + type.slice(1)} (${snapshot.size} encontrados) ---`, 'info');
-                snapshot.forEach(doc => {
-                    const user = doc.data();
-                    logToTerminal(`ID: ${doc.id}, Nome: ${user.fullname}, Matrícula: ${user.registration || 'N/A'}, CPF: ${user.cpf || 'N/A'}, Status: ${user.status || 'N/A'}, Reg. Status: ${user.registrationStatus || 'N/A'}`, 'debug');
-                });
-                logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
-
-            } catch (error) {
-                logToTerminal(`Erro ao carregar e listar ${type}: ${error.message}`, 'error');
             }
         }
 
@@ -1318,76 +1509,6 @@
                 }
             } catch (error) {
                 logToTerminal(`Erro ao excluir usuário: ${error.message}`, 'error');
-            }
-        }
-
-        async function setMaintenanceMode(isOn) {
-            logToTerminal(`Iniciando modo de manutenção: ${isOn ? 'ON' : 'OFF'}...`, 'info');
-            const messagesCollection = db.collection('messages');
-            const alunosCollection = db.collection('alunos');
-
-            try {
-                if (isOn) {
-                    // 1. Create maintenance message
-                    const maintenanceMessage = {
-                        content: "O servidor entrou em manutenção. Voltaremos nas próximas horas!",
-                        createdAt: firebase.firestore.Timestamp.fromDate(new Date('2000-01-01T21:50:33-03:00')), // Specific date
-                        expiration: firebase.firestore.Timestamp.fromDate(new Date('2050-01-01T21:50:33-03:00')), // Specific date
-                        recipientType: "all",
-                        senderId: "admin",
-                        senderName: "Administrador",
-                        title: "Mensagem do T.I"
-                    };
-                    await messagesCollection.doc(MAINTENANCE_MESSAGE_DOC_ID).set(maintenanceMessage);
-                    logToTerminal('Mensagem de manutenção criada/atualizada na coleção "messages".', 'success');
-
-                    // 2. Change registrationStatus of all students to "pending"
-                    //    and store original status for those not already pending
-                    originalRegistrationStatus = {}; // Reset
-                    const studentsSnapshot = await alunosCollection.get();
-                    const batch = db.batch();
-                    let studentsUpdated = 0;
-
-                    studentsSnapshot.forEach(doc => {
-                        const studentData = doc.data();
-                        if (studentData.registrationStatus !== 'pending') {
-                            originalRegistrationStatus[doc.id] = studentData.registrationStatus || 'approved'; // Store original status
-                            batch.update(alunosCollection.doc(doc.id), { registrationStatus: 'pending' });
-                            studentsUpdated++;
-                        } else {
-                            // If already pending, still store it so we don't change it back to approved
-                            originalRegistrationStatus[doc.id] = 'pending';
-                        }
-                    });
-                    await batch.commit();
-                    logToTerminal(`${studentsUpdated} alunos tiveram o 'registrationStatus' alterado para 'pending'.`, 'success');
-                    logToTerminal('Modo de manutenção ATIVADO.', 'success');
-
-                } else {
-                    // 1. Delete maintenance message
-                    await messagesCollection.doc(MAINTENANCE_MESSAGE_DOC_ID).delete();
-                    logToTerminal('Mensagem de manutenção removida da coleção "messages".', 'success');
-
-                    // 2. Revert registrationStatus for students (except those originally pending)
-                    const studentsSnapshot = await alunosCollection.get();
-                    const batch = db.batch();
-                    let studentsReverted = 0;
-
-                    studentsSnapshot.forEach(doc => {
-                        const studentData = doc.data();
-                        // Only revert if the original status was NOT 'pending'
-                        if (originalRegistrationStatus[doc.id] !== 'pending' && studentData.registrationStatus === 'pending') {
-                            batch.update(alunosCollection.doc(doc.id), { registrationStatus: 'approved' });
-                            studentsReverted++;
-                        }
-                    });
-                    await batch.commit();
-                    logToTerminal(`${studentsReverted} alunos tiveram o 'registrationStatus' revertido para 'approved'.`, 'success');
-                    originalRegistrationStatus = {}; // Clear stored statuses
-                    logToTerminal('Modo de manutenção DESATIVADO.', 'success');
-                }
-            } catch (error) {
-                logToTerminal(`Erro ao ${isOn ? 'ativar' : 'desativar'} modo de manutenção: ${error.message}`, 'error');
             }
         }
 
