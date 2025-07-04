@@ -778,6 +778,21 @@
             justify-content: center;
         }
 
+        /* Latency Display */
+        #latency-display {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid;
+            transition: color 0.3s ease, border-color 0.3s ease;
+            z-index: 10;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -814,6 +829,7 @@
         <div class="section-title"><i class="fas fa-code"></i> Terminal</div>
         <div class="terminal-container" id="api-status-terminal">
             <div class="log-entry log-info">Iniciando Painel de Depuração...</div>
+            <div id="latency-display">Latência: -- ms</div> <!-- Latency display element -->
         </div>
         <div class="terminal-input-group">
             <input type="text" class="terminal-input" id="command-input" placeholder="Digite um comando (ex: /help)">
@@ -969,7 +985,7 @@
         const restoreModal = document.getElementById('restore-modal');
         const adminPasswordRestoreInput = document.getElementById('admin-password-restore');
         const backupFileInput = document.getElementById('backup-file-input');
-
+        const latencyDisplay = document.getElementById('latency-display'); // New element for latency
 
         let allUsers = []; // Stores all loaded students/teachers for reports
         let filteredUsers = []; // Stores users after search filter
@@ -978,6 +994,7 @@
         const usersPerPage = 10;
         let currentLoadedUserType = ''; // To keep track of 'alunos' or 'professores'
         let isEditMode = false; // Track if the modal is in edit mode
+        let pingIntervalId; // To store the interval ID for clearing later
 
         // List of available commands for autocompletion
         const availableCommands = [
@@ -1705,6 +1722,7 @@
                 'messages',
                 'notifications',
                 'users',
+                'ping', // Added 'ping' collection to backup
                 // Adicione outras coleções aqui se existirem no seu Firestore
                 // Ex: 'configuracoes', 'eventos', 'logs', etc.
             ];
@@ -1847,6 +1865,76 @@
         //     }
         // }
 
+        // Firestore Ping Functionality
+        async function sendFirestorePing() {
+            const startTime = Date.now();
+            try {
+                const pingDocRef = db.collection('ping').doc(); // Create a new document with auto-generated ID
+                await pingDocRef.set({
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+                    clientTimestamp: new Date().toISOString(),
+                    panelId: 'funorte-debug-panel', // Identify the source of the ping
+                    status: 'success'
+                });
+                const endTime = Date.now();
+                const latency = endTime - startTime;
+                updateLatencyDisplay(latency);
+                // Removed: logToTerminal(`Ping Firestore bem-sucedido. Latência: ${latency}ms`, 'success');
+                // Optionally, delete the ping document to keep the collection clean
+                // await pingDocRef.delete();
+            } catch (error) {
+                const endTime = Date.now();
+                const latency = endTime - startTime; // Still calculate, but it's a failed ping
+                updateLatencyDisplay(latency, true); // Indicate error
+                // Removed: logToTerminal(`Falha no ping Firestore: ${error.message}. Latência (erro): ${latency}ms`, 'error');
+            }
+        }
+
+        function updateLatencyDisplay(latency, isError = false) {
+            latencyDisplay.textContent = `Latência: ${latency} ms`;
+            let color;
+            let borderColor;
+
+            if (isError) {
+                color = 'var(--error)';
+                borderColor = 'var(--error)';
+            } else if (latency < 100) { // Excellent
+                color = 'var(--success)';
+                borderColor = 'var(--success)';
+            } else if (latency < 300) { // Good
+                color = 'var(--terminal-green)';
+                borderColor = 'var(--terminal-green)';
+            } else if (latency < 600) { // Moderate
+                color = 'var(--warning)';
+                borderColor = 'var(--warning)';
+            } else { // Slow/Poor
+                color = 'var(--error)';
+                borderColor = 'var(--error)';
+            }
+            latencyDisplay.style.color = color;
+            latencyDisplay.style.borderColor = borderColor;
+        }
+
+        function startFirestorePingInterval() {
+            // Clear any existing interval to prevent duplicates
+            if (pingIntervalId) {
+                clearInterval(pingIntervalId);
+            }
+            // Send a ping every 5 seconds (5000 ms)
+            pingIntervalId = setInterval(sendFirestorePing, 5000);
+            logToTerminal('Monitoramento de latência do servidor iniciado.', 'info');
+        }
+
+        function stopFirestorePingInterval() {
+            if (pingIntervalId) {
+                clearInterval(pingIntervalId);
+                pingIntervalId = null;
+                logToTerminal('Monitoramento de latência do Firestore parado.', 'info');
+                latencyDisplay.textContent = 'Latência: -- ms';
+                latencyDisplay.style.color = 'var(--gray)';
+                latencyDisplay.style.borderColor = 'var(--gray)';
+            }
+        }
 
         // Terminal Commands
         commandInput.addEventListener('keypress', function(e) {
@@ -1899,8 +1987,8 @@
                     logToTerminal('/help - Mostra esta lista de comandos.', 'info');
                     logToTerminal('/clear - Limpa o terminal de status da API.', 'info');
                     logToTerminal('/clear-monitor - Limpa o terminal de monitoramento do servidor.', 'info');
-                    logToTerminal('/ping - Testa a conectividade do painel.', 'info'); // Added
-                    logToTerminal('/find <palavra-chave> - Busca por uma palavra-chave em todo o servidor (Firestore).', 'info'); // Added
+                    logToTerminal('/ping - Envia um ping para o Firestore e exibe a latência.', 'info'); // Updated description
+                    logToTerminal('/find <palavra-chave> - Busca por uma palavra-chave em todo o servidor (Firestore).', 'info');
                     logToTerminal('/show-api - Mostra as credenciais completas das APIs (requer senha de administrador).', 'info');
                     logToTerminal('/test-imgur - Executa o teste de upload do Imgur.', 'info');
                     logToTerminal('/test-firestore - Executa o teste de conexão do Firestore.', 'info');
@@ -1923,10 +2011,7 @@
                     logToTerminal('Terminal de monitoramento limpo.', 'info');
                     break;
                 case 'ping': // New command implementation
-                    const startTime = Date.now();
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate network delay
-                    const endTime = Date.now();
-                    logToTerminal(`Pong! Latência: ${endTime - startTime}ms`, 'success');
+                    await sendFirestorePing();
                     break;
                 case 'find': // New command implementation
                     if (params.length < 1) {
@@ -2116,6 +2201,7 @@
                 'messages',
                 'notifications',
                 'users',
+                'ping', // Added 'ping' to search
                 // Add any other collections you want to search
             ];
             let foundCount = 0;
@@ -2172,6 +2258,7 @@
                 'messages',
                 'notifications',
                 'users',
+                'ping', // Added 'ping' to monitor
                 // Adicione outras coleções aqui para monitoramento em tempo real
             ];
             let listeners = []; // To store unsubscribe functions
@@ -2218,6 +2305,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             displayApiCredentials(); // Display partial credentials on load
             setupFirestoreMonitor();
+            startFirestorePingInterval(); // Start continuous pinging
+        });
+
+        // Stop pinging when the page is closed or navigated away
+        window.addEventListener('beforeunload', () => {
+            stopFirestorePingInterval();
         });
     </script>
 </body>
