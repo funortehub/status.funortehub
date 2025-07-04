@@ -743,6 +743,40 @@
             pointer-events: none;
         }
 
+        /* Restore Modal Specific Styles */
+        .restore-modal-content {
+            background-color: var(--primary-light);
+            padding: 30px;
+            border-radius: var(--border-radius);
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px var(--terminal-green);
+            text-align: center;
+            animation: modal-pop-in 0.4s ease-out;
+        }
+
+        .restore-modal-content h2 {
+            color: var(--terminal-green);
+            margin-bottom: 20px;
+            text-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
+        }
+
+        .restore-modal-content input[type="password"] {
+            width: calc(100% - 24px);
+            padding: 12px;
+            margin-bottom: 20px;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--accent);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--terminal-green);
+            font-size: 1rem;
+            text-align: center;
+        }
+
+        .restore-modal-content .btn-group {
+            justify-content: center;
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 15px;
@@ -824,10 +858,13 @@
         </div>
 
 
-        <div class="section-title"><i class="fas fa-database"></i> Backup de Dados</div>
+        <div class="section-title"><i class="fas fa-database"></i> Backup e Restauração de Dados</div>
         <div class="btn-group">
             <button class="btn btn-warning" onclick="backupFirestoreData()">
                 <i class="fas fa-download"></i> Fazer Backup do Servidor
+            </button>
+            <button class="btn btn-info" onclick="showRestoreModal()">
+                <i class="fas fa-upload"></i> Restaurar do Backup Local
             </button>
         </div>
     </div>
@@ -854,6 +891,30 @@
                 </button>
                 <button class="btn btn-info" onclick="downloadReportPdf()">
                     <i class="fas fa-file-download"></i> Baixar PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Restauração de Backup -->
+    <div id="restore-modal" class="modal">
+        <div class="restore-modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title"><i class="fas fa-upload"></i> Restaurar Backup</h2>
+                <span class="modal-close" onclick="closeRestoreModal()">&times;</span>
+            </div>
+            <p>Para restaurar o backup, por favor, insira a senha de administrador e selecione o arquivo JSON.</p>
+            <input type="password" id="admin-password-restore" placeholder="Senha de Administrador">
+            <input type="file" id="backup-file-input" accept=".json" style="display: none;">
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="document.getElementById('backup-file-input').click()">
+                    <i class="fas fa-folder-open"></i> Selecionar Arquivo
+                </button>
+                <button class="btn btn-success" onclick="restoreFirestoreData()">
+                    <i class="fas fa-upload"></i> Restaurar
+                </button>
+                <button class="btn btn-danger" onclick="closeRestoreModal()">
+                    <i class="fas fa-times"></i> Cancelar
                 </button>
             </div>
         </div>
@@ -904,6 +965,9 @@
         const editReportBtn = document.getElementById('edit-report-btn');
         const saveReportBtn = document.getElementById('save-report-btn');
         const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const restoreModal = document.getElementById('restore-modal');
+        const adminPasswordRestoreInput = document.getElementById('admin-password-restore');
+        const backupFileInput = document.getElementById('backup-file-input');
 
 
         let allUsers = []; // Stores all loaded students/teachers for reports
@@ -928,7 +992,8 @@
             '/get-user',
             '/set-status',
             '/delete-user',
-            '/show-api'
+            '/show-api',
+            '/restore-backup'
         ];
 
         // Utility Functions
@@ -1145,6 +1210,7 @@
                     logToTerminal(`--- Fim da Lista de ${type.charAt(0).toUpperCase() + type.slice(1)} ---`, 'info');
                 } else {
                     allUsers = usersToProcess; // Only update allUsers for the UI list
+                    currentLoadedUserType = type; // Set the type of users currently loaded
                     logToTerminal(`${allUsers.length} ${type} carregados com sucesso para a interface.`, 'success');
                     currentPage = 1; // Reset to first page
                     filterAndPaginateUsers(); // Apply filter and render first page
@@ -1422,7 +1488,7 @@
 
             const updatedData = {
                 fullname: document.getElementById('edit-fullname').value,
-                birthdate: new Date(document.getElementById('edit-birthdate').value), // Convert to Date object
+                birthdate: document.getElementById('edit-birthdate').value ? new Date(document.getElementById('edit-birthdate').value) : null, // Convert to Date object, handle empty
                 cpf: document.getElementById('edit-cpf').value,
                 registration: document.getElementById('edit-registration').value,
                 username: document.getElementById('edit-username').value,
@@ -1528,6 +1594,97 @@
             }
         }
 
+        async function generateGeneralStudentsReport() {
+            logToTerminal('Gerando relatório geral de alunos em PDF...', 'info');
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'pt', 'a4');
+
+            try {
+                const studentsSnapshot = await db.collection('alunos').orderBy('fullname').get();
+                const students = studentsSnapshot.docs.map(doc => doc.data());
+
+                if (students.length === 0) {
+                    logToTerminal('Nenhum aluno encontrado para gerar o relatório.', 'warning');
+                    alert('Nenhum aluno encontrado para gerar o relatório.');
+                    return;
+                }
+
+                let y = 40;
+                const margin = 40;
+                const lineHeight = 15;
+                const pageHeight = doc.internal.pageSize.height;
+
+                doc.setFontSize(18);
+                doc.setTextColor(50, 130, 184); // secondary-accent
+                doc.text('Relatório Geral de Alunos Funorte Hub', doc.internal.pageSize.width / 2, y, { align: 'center' });
+                y += 25;
+
+                doc.setFontSize(10);
+                doc.setTextColor(224, 224, 224); // white
+                doc.text(`Data de Geração: ${new Date().toLocaleDateString('pt-BR')}`, margin, y);
+                y += 20;
+
+                // Table Headers
+                doc.setFontSize(10);
+                doc.setFont(undefined, 'bold');
+                doc.setTextColor(0, 255, 0); // terminal-green
+                doc.text('Nome Completo', margin, y);
+                doc.text('Matrícula', margin + 150, y);
+                doc.text('CPF', margin + 250, y);
+                doc.text('Usuário', margin + 350, y);
+                doc.text('Curso', margin + 450, y);
+                doc.text('Tipo Internato', margin + 520, y);
+                y += lineHeight;
+                doc.setDrawColor(15, 76, 117); // accent
+                doc.line(margin, y - 5, doc.internal.pageSize.width - margin, y - 5); // Underline headers
+                y += 5;
+
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(224, 224, 224); // white
+
+                students.forEach(student => {
+                    if (y + lineHeight > pageHeight - margin) {
+                        doc.addPage();
+                        y = margin;
+                        doc.setFontSize(18);
+                        doc.setTextColor(50, 130, 184);
+                        doc.text('Relatório Geral de Alunos Funorte Hub (Continuação)', doc.internal.pageSize.width / 2, y, { align: 'center' });
+                        y += 25;
+                        doc.setFontSize(10);
+                        doc.setTextColor(0, 255, 0);
+                        doc.setFont(undefined, 'bold');
+                        doc.text('Nome Completo', margin, y);
+                        doc.text('Matrícula', margin + 150, y);
+                        doc.text('CPF', margin + 250, y);
+                        doc.text('Usuário', margin + 350, y);
+                        doc.text('Curso', margin + 450, y);
+                        doc.text('Tipo Internato', margin + 520, y);
+                        y += lineHeight;
+                        doc.setDrawColor(15, 76, 117);
+                        doc.line(margin, y - 5, doc.internal.pageSize.width - margin, y - 5);
+                        y += 5;
+                        doc.setFont(undefined, 'normal');
+                        doc.setTextColor(224, 224, 224);
+                    }
+
+                    doc.text(student.fullname || 'N/A', margin, y);
+                    doc.text(student.registration || 'N/A', margin + 150, y);
+                    doc.text(student.cpf || 'N/A', margin + 250, y);
+                    doc.text(student.username || 'N/A', margin + 350, y);
+                    doc.text(getCourseName(student.course) || 'N/A', margin + 450, y);
+                    doc.text(student.internatoType || 'N/A', margin + 520, y);
+                    y += lineHeight;
+                });
+
+                doc.save(`relatorio_alunos_funorte_hub_${new Date().toISOString().slice(0, 10)}.pdf`);
+                logToTerminal('Relatório geral de alunos em PDF gerado e baixado com sucesso!', 'success');
+
+            } catch (error) {
+                logToTerminal(`Erro ao gerar relatório geral de alunos: ${error.message}`, 'error');
+                alert('Erro ao gerar relatório geral de alunos. Verifique o console para mais detalhes.');
+            }
+        }
+
         // Backup Firestore Data
         async function backupFirestoreData() {
             logToTerminal('Iniciando backup de dados do Firestore...', 'info');
@@ -1538,10 +1695,16 @@
                 for (const collectionName of collections) {
                     logToTerminal(`Fazendo backup da coleção: ${collectionName}...`, 'info');
                     const snapshot = await db.collection(collectionName).get();
-                    backupData[collectionName] = snapshot.docs.map(doc => ({
-                        id: doc.id,
-                        ...doc.data()
-                    }));
+                    backupData[collectionName] = snapshot.docs.map(doc => {
+                        const data = doc.data();
+                        // Convert Timestamps to ISO strings for JSON serialization
+                        for (const key in data) {
+                            if (data[key] && typeof data[key].toDate === 'function') {
+                                data[key] = data[key].toDate().toISOString();
+                            }
+                        }
+                        return { id: doc.id, ...data };
+                    });
                 }
 
                 const backupJson = JSON.stringify(backupData, null, 2);
@@ -1560,6 +1723,111 @@
                 logToTerminal(`Erro ao fazer backup do Servidor: ${error.message}`, 'error');
             }
         }
+
+        // Restore Firestore Data
+        function showRestoreModal() {
+            restoreModal.style.display = 'flex';
+            adminPasswordRestoreInput.value = '';
+            backupFileInput.value = ''; // Clear selected file
+        }
+
+        function closeRestoreModal() {
+            restoreModal.style.display = 'none';
+        }
+
+        async function restoreFirestoreData() {
+            const password = adminPasswordRestoreInput.value;
+            const file = backupFileInput.files[0];
+
+            if (password !== ADMIN_PASSWORD) {
+                logToTerminal('Senha de administrador incorreta para restauração.', 'error');
+                alert('Senha de administrador incorreta!');
+                return;
+            }
+
+            if (!file) {
+                logToTerminal('Nenhum arquivo de backup selecionado.', 'warning');
+                alert('Por favor, selecione um arquivo de backup JSON.');
+                return;
+            }
+
+            logToTerminal('Iniciando restauração de dados do Firestore...', 'info');
+            closeRestoreModal(); // Close modal immediately
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                try {
+                    const backupData = JSON.parse(event.target.result);
+                    
+                    // Confirm with user before proceeding with destructive operation
+                    const confirmRestore = confirm("ATENÇÃO: A restauração de backup irá SOBRESCREVER os dados existentes no Firestore. Deseja continuar?");
+                    if (!confirmRestore) {
+                        logToTerminal('Restauração cancelada pelo usuário.', 'warning');
+                        return;
+                    }
+
+                    for (const collectionName in backupData) {
+                        logToTerminal(`Restaurando coleção: ${collectionName}...`, 'info');
+                        const batch = db.batch();
+                        const collectionRef = db.collection(collectionName);
+
+                        // Optional: Clear existing collection before restoring
+                        // This is a destructive operation, use with caution!
+                        // await clearCollection(collectionRef); 
+                        // logToTerminal(`Coleção ${collectionName} limpa antes da restauração.`, 'warning');
+
+                        for (const docData of backupData[collectionName]) {
+                            const docId = docData.id;
+                            const dataToSet = { ...docData };
+                            delete dataToSet.id; // Remove 'id' as it's used for doc reference
+
+                            // Convert ISO strings back to Firestore Timestamps
+                            for (const key in dataToSet) {
+                                if (typeof dataToSet[key] === 'string' && dataToSet[key].match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)) {
+                                    try {
+                                        dataToSet[key] = firebase.firestore.Timestamp.fromDate(new Date(dataToSet[key]));
+                                    } catch (e) {
+                                        // Keep as string if conversion fails
+                                        logToTerminal(`Falha ao converter data ${dataToSet[key]} para Timestamp.`, 'warning');
+                                    }
+                                }
+                            }
+                            batch.set(collectionRef.doc(docId), dataToSet);
+                        }
+                        await batch.commit();
+                        logToTerminal(`Coleção ${collectionName} restaurada com sucesso.`, 'success');
+                    }
+                    logToTerminal('Restauração do Firestore concluída com sucesso!', 'success');
+                    alert('Restauração do Firestore concluída com sucesso!');
+                    // Reload user list if applicable
+                    if (currentLoadedUserType) {
+                        loadUsersForReport(currentLoadedUserType, false);
+                    }
+
+                } catch (error) {
+                    logToTerminal(`Erro ao processar arquivo de backup: ${error.message}`, 'error');
+                    alert(`Erro ao restaurar backup: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Helper to clear a collection (use with extreme caution!)
+        // async function clearCollection(collectionRef) {
+        //     const snapshot = await collectionRef.limit(100).get(); // Process in batches
+        //     if (snapshot.empty) {
+        //         return;
+        //     }
+        //     const batch = db.batch();
+        //     snapshot.docs.forEach(doc => {
+        //         batch.delete(doc.ref);
+        //     });
+        //     await batch.commit();
+        //     if (snapshot.docs.length === 100) { // If there might be more documents
+        //         return clearCollection(collectionRef); // Recursively clear
+        //     }
+        // }
+
 
         // Terminal Commands
         commandInput.addEventListener('keypress', function(e) {
@@ -1618,6 +1886,7 @@
                     logToTerminal('/load-students - Carrega e exibe a lista de alunos no terminal.', 'info');
                     logToTerminal('/load-teachers - Carrega e exibe a lista de professores no terminal.', 'info');
                     logToTerminal('/backup - Realiza o backup de todos os dados do servidor.', 'info');
+                    logToTerminal('/restore-backup - Abre o modal para restaurar dados de um backup local.', 'info');
                     logToTerminal('/count-users - Conta o número total de alunos e professores.', 'info');
                     logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
                     logToTerminal('/set-status <username> <status (active/blocked)> [reason] - Altera o status de um usuário (active/blocked).', 'info');
@@ -1654,6 +1923,9 @@
                     break;
                 case 'backup':
                     backupFirestoreData();
+                    break;
+                case 'restore-backup':
+                    showRestoreModal();
                     break;
                 case 'count-users':
                     await countUsers();
