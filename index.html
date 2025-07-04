@@ -1033,6 +1033,10 @@
         let isEditMode = false; // Track if the modal is in edit mode
         let pingIntervalId; // To store the interval ID for clearing later
 
+        // Variáveis para o modo de manutenção
+        let maintenanceMessageDocId = null; // Armazena o ID do documento da mensagem de manutenção
+        let originalPendingStudents = new Set(); // Armazena IDs de alunos que já estavam 'pending'
+
         // List of available commands for autocompletion
         const availableCommands = [
             '/help',
@@ -1050,7 +1054,9 @@
             '/set-status',
             '/delete-user',
             '/show-api',
-            '/restore-backup'
+            '/restore-backup',
+            '/maintenance on', // New maintenance command
+            '/maintenance off' // New maintenance command
         ];
 
         // Utility Functions
@@ -1063,7 +1069,7 @@
         }
 
         function formatDate(dateInput) {
-            if (!dateInput) return ''; // Return empty string for input fields
+            if (!dateInput) return ''; // Return empty string for input type="date"
             try {
                 let date;
                 if (dateInput.toDate) {
@@ -2037,6 +2043,7 @@
                     logToTerminal('/get-user <username> - Exibe detalhes de um usuário específico pelo nome de usuário.', 'info');
                     logToTerminal('/set-status <username> <status (active/blocked)> [reason] - Altera o status de um usuário (active/blocked).', 'info');
                     logToTerminal('/delete-user <username> - Exclui um usuário.', 'info');
+                    logToTerminal('/maintenance <on|off> - Ativa ou desativa o modo de manutenção do servidor.', 'info'); // New command help
                     logToTerminal('--------------------------', 'info');
                     break;
                 case 'clear':
@@ -2106,6 +2113,13 @@
                         return;
                     }
                     await deleteUserByUsername(params[0]);
+                    break;
+                case 'maintenance': // New maintenance command handler
+                    if (params.length < 1 || (params[0] !== 'on' && params[0] !== 'off')) {
+                        logToTerminal('Uso: /maintenance <on|off>', 'warning');
+                        return;
+                    }
+                    await setMaintenanceMode(params[0]);
                     break;
                 default:
                     logToTerminal(`Comando desconhecido: "${cmd}". Digite /help para ver os comandos disponíveis.`, 'error');
@@ -2337,6 +2351,112 @@
                 listeners.push(unsubscribe); // Store unsubscribe function
             });
             logToTerminal('Monitoramento de Servidor em tempo real iniciado para coleções principais.', 'info', firestoreMonitorTerminal);
+        }
+
+        // --- Funções de Manutenção do Servidor ---
+
+        async function setMaintenanceMode(mode) {
+            if (mode === 'on') {
+                logToTerminal('Ativando modo de manutenção...', 'warning');
+                try {
+                    // 1. Criar mensagem de manutenção
+                    await createMaintenanceMessage();
+
+                    // 2. Salvar IDs dos alunos que já estão 'pending' e mudar todos para 'pending'
+                    originalPendingStudents.clear(); // Limpa o set antes de preencher
+                    const studentsSnapshot = await db.collection('alunos').get();
+                    const batch = db.batch();
+                    let studentsUpdatedCount = 0;
+
+                    studentsSnapshot.forEach(doc => {
+                        const studentData = doc.data();
+                        if (studentData.registrationStatus === 'pending') {
+                            originalPendingStudents.add(doc.id);
+                        }
+                        if (studentData.registrationStatus !== 'pending') {
+                            batch.update(doc.ref, { registrationStatus: 'pending' });
+                            studentsUpdatedCount++;
+                        }
+                    });
+
+                    await batch.commit();
+                    logToTerminal(`Modo de manutenção ATIVADO. ${studentsUpdatedCount} alunos tiveram o status de registro alterado para 'pending'.`, 'success');
+                    logToTerminal(`IDs de alunos que já estavam 'pending' (${originalPendingStudents.size}): ${Array.from(originalPendingStudents).join(', ')}`, 'debug');
+
+                } catch (error) {
+                    logToTerminal(`Erro ao ativar modo de manutenção: ${error.message}`, 'error');
+                }
+            } else if (mode === 'off') {
+                logToTerminal('Desativando modo de manutenção...', 'warning');
+                try {
+                    // 1. Remover mensagem de manutenção
+                    await removeMaintenanceMessage();
+
+                    // 2. Mudar registrationStatus para 'approved', exceto os que já estavam 'pending'
+                    const studentsSnapshot = await db.collection('alunos').get();
+                    const batch = db.batch();
+                    let studentsUpdatedCount = 0;
+
+                    studentsSnapshot.forEach(doc => {
+                        // Só muda para 'approved' se o aluno NÃO estava 'pending' originalmente
+                        if (!originalPendingStudents.has(doc.id) && doc.data().registrationStatus === 'pending') {
+                            batch.update(doc.ref, { registrationStatus: 'approved' });
+                            studentsUpdatedCount++;
+                        }
+                    });
+
+                    await batch.commit();
+                    logToTerminal(`Modo de manutenção DESATIVADO. ${studentsUpdatedCount} alunos tiveram o status de registro alterado para 'approved'.`, 'success');
+                    originalPendingStudents.clear(); // Limpa o set após a desativação
+                } catch (error) {
+                    logToTerminal(`Erro ao desativar modo de manutenção: ${error.message}`, 'error');
+                }
+            }
+        }
+
+        async function createMaintenanceMessage() {
+            logToTerminal('Criando mensagem de manutenção...', 'info');
+            try {
+                // Data de criação: 1 de janeiro de 2000 às 21:50:33 UTC-3
+                const createdAtDate = new Date(Date.UTC(2000, 0, 1, 21, 50, 33)); // UTC
+                createdAtDate.setHours(createdAtDate.getHours() + 3); // Ajusta para UTC-3
+
+                // Data de expiração: 1 de janeiro de 2050 às 21:50:33 UTC-3
+                const expirationDate = new Date(Date.UTC(2050, 0, 1, 21, 50, 33)); // UTC
+                expirationDate.setHours(expirationDate.getHours() + 3); // Ajusta para UTC-3
+
+                const messageData = {
+                    content: "O servidor entrou em manutenção. Voltaremos nas próximas horas!",
+                    createdAt: firebase.firestore.Timestamp.fromDate(createdAtDate),
+                    expiration: firebase.firestore.Timestamp.fromDate(expirationDate),
+                    recipientType: "all",
+                    senderId: "admin",
+                    senderName: "Administrador",
+                    title: "Mensagem do T.I"
+                };
+
+                const docRef = await db.collection('messages').add(messageData);
+                maintenanceMessageDocId = docRef.id;
+                logToTerminal(`Mensagem de manutenção criada com sucesso! ID: ${maintenanceMessageDocId}`, 'success');
+            } catch (error) {
+                logToTerminal(`Erro ao criar mensagem de manutenção: ${error.message}`, 'error');
+                maintenanceMessageDocId = null; // Garante que o ID seja nulo em caso de falha
+            }
+        }
+
+        async function removeMaintenanceMessage() {
+            if (!maintenanceMessageDocId) {
+                logToTerminal('Nenhuma mensagem de manutenção ativa para remover.', 'warning');
+                return;
+            }
+            logToTerminal(`Removendo mensagem de manutenção com ID: ${maintenanceMessageDocId}...`, 'info');
+            try {
+                await db.collection('messages').doc(maintenanceMessageDocId).delete();
+                logToTerminal('Mensagem de manutenção removida com sucesso!', 'success');
+                maintenanceMessageDocId = null;
+            } catch (error) {
+                logToTerminal(`Erro ao remover mensagem de manutenção: ${error.message}`, 'error');
+            }
         }
 
         // Initial setup on page load
