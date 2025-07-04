@@ -41,6 +41,29 @@
             -webkit-user-select: text;
             -moz-user-select: text;
             -ms-user-select: text;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        /* Background Grid Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0, 255, 0, 0.05) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0, 255, 0, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            opacity: 0.1;
+            animation: grid-pan 60s linear infinite;
+        }
+
+        @keyframes grid-pan {
+            from { background-position: 0 0; }
+            to { background-position: -4000px -4000px; }
         }
 
         .container {
@@ -52,6 +75,35 @@
             max-width: 1200px;
             margin-bottom: 20px;
             border: 1px solid var(--accent); /* Subtle border */
+            position: relative; /* For pseudo-elements */
+            overflow: hidden; /* Hide overflow from pseudo-elements */
+        }
+
+        /* Container border glow */
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: linear-gradient(45deg, #00ff00, #3498db, #0f4c75, #00ff00);
+            background-size: 400% 400%;
+            z-index: -1;
+            border-radius: var(--border-radius);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            animation: border-glow 10s linear infinite;
+        }
+
+        .container:hover::before {
+            opacity: 0.5;
+        }
+
+        @keyframes border-glow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
         h1, h2 {
@@ -59,7 +111,22 @@
             color: var(--secondary-accent); /* Lighter blue for titles */
             margin-bottom: 20px;
             text-align: center;
-            text-shadow: 0 0 5px rgba(50, 130, 184, 0.5); /* Subtle glow */
+            text-shadow: 0 0 8px rgba(50, 130, 184, 0.8); /* Stronger glow */
+            letter-spacing: 2px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        h1::after, h2::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            bottom: 0;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 2px;
+            background-color: var(--terminal-green);
+            box-shadow: 0 0 8px var(--terminal-green);
         }
 
         .section-title {
@@ -73,6 +140,15 @@
             padding-bottom: 5px;
             text-transform: uppercase;
             letter-spacing: 1px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--terminal-green);
+            text-shadow: 0 0 5px var(--terminal-green);
         }
 
         .btn-group {
@@ -99,6 +175,24 @@
             gap: 8px;
             box-shadow: var(--shadow);
             text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            transition: all 0.5s ease;
+            transform: skewX(-20deg);
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
@@ -108,7 +202,7 @@
 
         .btn-primary:hover {
             background-color: var(--secondary-accent);
-            box-shadow: 0 0 10px var(--secondary-accent);
+            box-shadow: 0 0 15px var(--secondary-accent);
         }
 
         .btn-secondary {
@@ -118,7 +212,7 @@
 
         .btn-secondary:hover {
             background-color: #283a5e;
-            box-shadow: 0 0 10px rgba(22, 33, 62, 0.5);
+            box-shadow: 0 0 15px rgba(22, 33, 62, 0.8);
         }
 
         .btn-info {
@@ -128,7 +222,7 @@
 
         .btn-info:hover {
             background-color: #2980b9;
-            box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+            box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
         }
 
         .btn-success {
@@ -138,7 +232,7 @@
 
         .btn-success:hover {
             background-color: #27ae60;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.5);
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.8);
         }
 
         .btn-warning {
@@ -148,7 +242,7 @@
 
         .btn-warning:hover {
             background-color: #e67e22;
-            box-shadow: 0 0 10px rgba(243, 156, 18, 0.5);
+            box-shadow: 0 0 15px rgba(243, 156, 18, 0.8);
         }
 
         .btn-danger {
@@ -158,7 +252,7 @@
 
         .btn-danger:hover {
             background-color: #c0392b;
-            box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
         }
 
         .btn:active {
@@ -174,6 +268,7 @@
             margin-bottom: 8px;
             font-weight: 500;
             color: var(--secondary-accent);
+            font-family: 'Fira Code', monospace;
         }
 
         .form-control {
@@ -185,12 +280,13 @@
             color: var(--terminal-green); /* Green text for inputs */
             font-size: 1rem;
             transition: var(--transition);
+            box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.2);
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--secondary-accent);
-            box-shadow: 0 0 8px rgba(50, 130, 184, 0.5); /* Glow on focus */
+            box-shadow: 0 0 10px rgba(50, 130, 184, 0.8), inset 0 0 8px rgba(0, 255, 0, 0.5); /* Glow on focus */
             background-color: rgba(0, 0, 0, 0.5);
         }
 
@@ -215,7 +311,25 @@
             white-space: pre-wrap;
             word-break: break-all;
             border: 1px solid var(--accent);
-            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.2); /* Inner glow */
+            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.4); /* Stronger inner glow */
+            position: relative;
+        }
+
+        /* Terminal blinking cursor effect */
+        .terminal-container::after {
+            content: '_';
+            animation: blink-caret 1s step-end infinite;
+            color: var(--terminal-green);
+            font-size: 1.2em;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            opacity: 0.7;
+        }
+
+        @keyframes blink-caret {
+            from, to { opacity: 0; }
+            50% { opacity: 1; }
         }
 
         .terminal-input-group {
@@ -232,6 +346,7 @@
             border-radius: var(--border-radius);
             font-family: 'Fira Code', monospace;
             outline: none;
+            box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.2);
         }
 
         .terminal-input::placeholder {
@@ -247,15 +362,28 @@
             margin-left: 10px;
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .terminal-send-btn:hover {
             background-color: var(--secondary-accent);
-            box-shadow: 0 0 8px var(--secondary-accent);
+            box-shadow: 0 0 10px var(--secondary-accent);
         }
 
         .log-entry {
             margin-bottom: 5px;
+            line-height: 1.4;
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .log-entry::before {
+            content: '>';
+            position: absolute;
+            left: 0;
+            color: var(--terminal-green);
         }
 
         .log-info { color: var(--terminal-green); }
@@ -278,6 +406,12 @@
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
             border: 2px solid var(--accent);
+            animation: image-fade-in 1s ease-out;
+        }
+
+        @keyframes image-fade-in {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .user-list {
@@ -287,6 +421,7 @@
             border-radius: var(--border-radius);
             padding: 10px;
             background-color: rgba(0, 0, 0, 0.2); /* Slightly transparent background */
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
         }
 
         .user-item {
@@ -298,13 +433,31 @@
             justify-content: space-between;
             align-items: center;
             cursor: pointer;
-            transition: background-color 0.3s ease, border 0.3s ease;
+            transition: background-color 0.3s ease, border 0.3s ease, transform 0.2s ease;
             border: 1px solid transparent;
+            position: relative;
+        }
+
+        .user-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: var(--terminal-green);
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
 
         .user-item:hover {
             background-color: rgba(22, 33, 62, 0.8);
             border: 1px solid var(--secondary-accent);
+            transform: translateX(5px);
+        }
+
+        .user-item:hover::before {
+            opacity: 1;
         }
 
         .user-item-info {
@@ -328,6 +481,7 @@
             background-color: rgba(0, 0, 0, 0.8); /* Darker modal overlay */
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(5px); /* Frosted glass effect */
         }
 
         .modal-content {
@@ -337,11 +491,17 @@
             border-radius: var(--border-radius);
             width: 90%;
             max-width: 800px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.7); /* Stronger shadow for modal */
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9), 0 0 20px var(--secondary-accent); /* Stronger shadow for modal */
             position: relative;
             max-height: 90vh;
             overflow-y: auto;
             border: 1px solid var(--secondary-accent);
+            animation: modal-pop-in 0.4s ease-out;
+        }
+
+        @keyframes modal-pop-in {
+            from { opacity: 0; transform: scale(0.7); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .modal-header {
@@ -357,6 +517,7 @@
             font-family: 'Fira Code', monospace;
             font-size: 1.5rem;
             color: var(--secondary-accent);
+            text-shadow: 0 0 5px var(--secondary-accent);
         }
 
         .modal-close {
@@ -364,12 +525,13 @@
             font-size: 2rem;
             font-weight: bold;
             cursor: pointer;
-            transition: color 0.3s ease;
+            transition: color 0.3s ease, transform 0.3s ease;
         }
 
         .modal-close:hover,
         .modal-close:focus {
             color: var(--white);
+            transform: rotate(90deg);
         }
 
         .report-content {
@@ -380,6 +542,7 @@
             line-height: 1.6;
             font-size: 0.95rem;
             border: 1px solid var(--accent);
+            box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1);
         }
 
         .report-content h3 {
@@ -389,6 +552,13 @@
             font-family: 'Fira Code', monospace;
             border-bottom: 1px dashed var(--accent);
             padding-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .report-content h3 i {
+            color: var(--terminal-green);
         }
 
         .report-content ul {
@@ -411,6 +581,7 @@
             border-radius: var(--border-radius);
             margin-bottom: 10px;
             border: 1px solid var(--accent);
+            box-shadow: 0 0 5px rgba(50, 130, 184, 0.3);
         }
 
         .report-content .diary-entry h4, .report-content .checkin-entry h4 {
@@ -418,6 +589,9 @@
             margin-top: 0;
             margin-bottom: 5px;
             font-family: 'Fira Code', monospace;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .report-content .diary-entry p, .report-content .checkin-entry p {
@@ -437,16 +611,22 @@
             object-fit: cover;
             border-radius: var(--border-radius);
             border: 1px solid var(--gray);
+            transition: transform 0.2s ease;
+        }
+
+        .report-content .images-grid img:hover {
+            transform: scale(1.05);
         }
 
         .spinner {
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-top: 2px solid var(--secondary-accent); /* Accent color for spinner */
+            width: 30px;
+            height: 30px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-top: 3px solid var(--secondary-accent); /* Accent color for spinner */
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 20px auto;
+            box-shadow: 0 0 10px var(--secondary-accent);
         }
 
         @keyframes spin {
@@ -470,6 +650,9 @@
             border-radius: var(--border-radius);
             cursor: pointer;
             transition: background-color 0.3s ease, box-shadow 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .pagination-controls button:disabled {
@@ -480,7 +663,7 @@
 
         .pagination-controls button:hover:not(:disabled) {
             background-color: rgba(22, 33, 62, 0.8);
-            box-shadow: 0 0 8px rgba(22, 33, 62, 0.5);
+            box-shadow: 0 0 10px rgba(22, 33, 62, 0.5);
         }
 
         .search-input-group {
@@ -498,6 +681,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 10px;
+            position: relative;
         }
 
         .report-content .editable-field label {
@@ -505,6 +689,7 @@
             font-weight: bold;
             color: var(--secondary-accent); /* Accent color for labels */
             margin-right: 10px;
+            font-family: 'Fira Code', monospace;
         }
 
         .report-content .editable-field span,
@@ -517,6 +702,7 @@
             background-color: rgba(0, 0, 0, 0.3);
             color: var(--terminal-green);
             font-size: 0.95rem;
+            transition: all 0.3s ease;
         }
 
         .report-content .editable-field input:focus,
@@ -534,6 +720,7 @@
             padding: 8px 0;
             cursor: default;
             color: var(--white); /* White text in view mode */
+            box-shadow: none;
         }
 
         .report-content .editable-field.view-mode input:focus,
@@ -542,6 +729,18 @@
             border-color: transparent;
             background-color: transparent;
             box-shadow: none;
+        }
+
+        /* Icon for editable fields */
+        .report-content .editable-field:not(.view-mode)::after {
+            content: '\f044'; /* FontAwesome pencil icon */
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 10px;
+            color: var(--terminal-green);
+            opacity: 0.5;
+            pointer-events: none;
         }
 
         @media (max-width: 768px) {
@@ -575,26 +774,26 @@
 </head>
 <body>
     <div class="container">
-        <h1>Funorte Hub - Painel de Depuração</h1>
+        <h1><i class="fas fa-terminal"></i> Funorte Hub - Painel de Depuração <i class="fas fa-bug"></i></h1>
 
-        <div class="section-title">Terminal</div>
+        <div class="section-title"><i class="fas fa-code"></i> Terminal</div>
         <div class="terminal-container" id="api-status-terminal">
             <div class="log-entry log-info">Iniciando Painel de Depuração...</div>
         </div>
         <div class="terminal-input-group">
             <input type="text" class="terminal-input" id="command-input" placeholder="Digite um comando (ex: /help)">
-            <button class="terminal-send-btn" onclick="executeCommand()">Enviar</button>
+            <button class="terminal-send-btn" onclick="executeCommand()"><i class="fas fa-paper-plane"></i> Enviar</button>
         </div>
 
-        <div class="section-title">Monitoramento do Servidor em Tempo Real</div>
+        <div class="section-title"><i class="fas fa-chart-line"></i> Monitoramento do Servidor em Tempo Real</div>
         <div class="terminal-container" id="firestore-monitor-terminal">
             <div class="log-entry log-info">Aguardando alterações no Servidor...</div>
         </div>
 
-        <div class="section-title">Testes de API</div>
+        <div class="section-title"><i class="fas fa-vial"></i> Testes de API</div>
         <div class="image-preview-container" id="imgur-preview"></div>
 
-        <div class="section-title">Gerenciamento de Usuários</div>
+        <div class="section-title"><i class="fas fa-users-cog"></i> Gerenciamento de Usuários</div>
         <div class="btn-group">
             <button class="btn btn-success" onclick="loadUsersForReport('alunos', false)">
                 <i class="fas fa-user-graduate"></i> Carregar Alunos
@@ -607,11 +806,11 @@
             </button>
         </div>
         <div class="form-group">
-            <label for="search-user-input">Pesquisar Usuário:</label>
+            <label for="search-user-input"><i class="fas fa-search"></i> Pesquisar Usuário:</label>
             <div class="search-input-group">
                 <input type="text" id="search-user-input" class="form-control" placeholder="Pesquisar por nome..." oninput="filterAndPaginateUsers()">
                 <button class="btn btn-secondary" onclick="filterAndPaginateUsers()">
-                    <i class="fas fa-search"></i>
+                    <i class="fas fa-search"></i> Buscar
                 </button>
             </div>
         </div>
@@ -625,7 +824,7 @@
         </div>
 
 
-        <div class="section-title">Backup de Dados</div>
+        <div class="section-title"><i class="fas fa-database"></i> Backup de Dados</div>
         <div class="btn-group">
             <button class="btn btn-warning" onclick="backupFirestoreData()">
                 <i class="fas fa-download"></i> Fazer Backup do Servidor
@@ -637,7 +836,7 @@
     <div id="report-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2 class="modal-title" id="report-modal-title">Relatório de Usuário</h2>
+                <h2 class="modal-title" id="report-modal-title"><i class="fas fa-file-alt"></i> Relatório de Usuário</h2>
                 <span class="modal-close" onclick="closeReportModal()">&times;</span>
             </div>
             <div class="report-content" id="report-modal-body">
@@ -654,7 +853,7 @@
                     <i class="fas fa-times"></i> Cancelar
                 </button>
                 <button class="btn btn-info" onclick="downloadReportPdf()">
-                    <i class="fas fa-download"></i> Baixar PDF
+                    <i class="fas fa-file-download"></i> Baixar PDF
                 </button>
             </div>
         </div>
@@ -1053,7 +1252,7 @@
 
             try {
                 let reportHtml = `
-                    <h3>Informações Pessoais</h3>
+                    <h3><i class="fas fa-user-circle"></i> Informações Pessoais</h3>
                     <div class="editable-field ${isEditMode ? '' : 'view-mode'}">
                         <label>Nome Completo:</label>
                         ${isEditMode ? `<input type="text" id="edit-fullname" value="${currentReportUser.fullname || ''}">` : `<span>${currentReportUser.fullname || 'Não informado'}</span>`}
@@ -1133,7 +1332,7 @@
                         .orderBy('createdAt', 'desc')
                         .get();
 
-                    reportHtml += `<h3>Diários de Campo (${diariesSnapshot.size})</h3>`;
+                    reportHtml += `<h3><i class="fas fa-book"></i> Diários de Campo (${diariesSnapshot.size})</h3>`;
                     if (diariesSnapshot.empty) {
                         reportHtml += '<p>Nenhum diário de campo registrado.</p>';
                     } else {
@@ -1141,7 +1340,7 @@
                             const diary = doc.data();
                             reportHtml += `
                                 <div class="diary-entry">
-                                    <h4>${diary.title}</h4>
+                                    <h4><i class="fas fa-sticky-note"></i> ${diary.title}</h4>
                                     <p><span class="data-label">Data:</span> ${formatDisplayDate(diary.date)}</p>
                                     <p><span class="data-label">Professor:</span> ${diary.professorName || 'N/A'}</p>
                                     <p><span class="data-label">Status:</span> ${diary.status}</p>
@@ -1165,7 +1364,7 @@
                         .orderBy('checkinTime', 'desc')
                         .get();
 
-                    reportHtml += `<h3>Histórico de Check-ins (${checkinsSnapshot.size})</h3>`;
+                    reportHtml += `<h3><i class="fas fa-map-marker-alt"></i> Histórico de Check-ins (${checkinsSnapshot.size})</h3>`;
                     if (checkinsSnapshot.empty) {
                         reportHtml += '<p>Nenhum check-in registrado.</p>';
                     } else {
@@ -1173,7 +1372,7 @@
                             const checkin = doc.data();
                             reportHtml += `
                                 <div class="checkin-entry">
-                                    <h4>Check-in com ${checkin.preceptorName || 'N/A'}</h4>
+                                    <h4><i class="fas fa-clock"></i> Check-in com ${checkin.preceptorName || 'N/A'}</h4>
                                     <p><span class="data-label">Hora do Check-in:</span> ${formatDateTime(checkin.checkinTime)}</p>
                                     <p><span class="data-label">Localização:</span> ${checkin.latitude}, ${checkin.longitude} (${checkin.locationType === 'ip' ? 'Aproximada por IP' : 'GPS'})</p>
                                     <p><span class="data-label">Status:</span> ${checkin.status}</p>
@@ -1608,6 +1807,8 @@
             // Clear previous listeners if any
             listeners.forEach(unsubscribe => unsubscribe());
             listeners = [];
+
+            firestoreMonitorTerminal.innerHTML = '<div class="log-entry log-info">Aguardando alterações no Servidor...</div>'; // Reset monitor terminal
 
             collectionsToMonitor.forEach(collectionName => {
                 const unsubscribe = db.collection(collectionName).onSnapshot(snapshot => {
